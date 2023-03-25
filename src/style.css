@@ -1,0 +1,91 @@
+body {
+    padding: 0px;
+    margin: 0px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    height: 100vh;
+    background: radial-gradient(white, rgb(255, 119, 0) 100%);
+}
+
+html {
+    height: 100%;
+    touch-action: manipulation;
+}
+
+* {
+
+    /* user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none; */
+}
+
+
+.main-container {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+}
+
+.floatingButton {
+    position: fixed;
+    top: 10px;
+    z-index: 1;
+}
+
+
+* {
+    font-family: 'Courier New', Courier, monospace;
+
+}
+
+:root {
+    --btnShadowNormal: 3px 3px 4px #0009;
+    --btnShadowActive: 1px 1px 1px #0009;
+    --btnShadowHover: 2px 2px 2px #0009;
+
+}
+
+button {
+    border: none;
+    background: #000;
+    border-radius: 20px;
+    box-shadow: var(--btnShadowNormal);
+    padding: 8px 16px;
+    color: rgb(255, 240, 213);
+    font-weight: bolder;
+    cursor: pointer;
+    text-transform: uppercase;
+    height: 30px;
+
+}
+
+
+button:active {
+    box-shadow: var(--btnShadowActive);
+}
+
+button:hover:not(:active) {
+    box-shadow: var(--btnShadowHover);
+}
+
+.svgbtn {
+    filter: drop-shadow(var(--btnShadowNormal))
+}
+
+
+.svgbtn:active {
+    filter: drop-shadow(var(--btnShadowActive))
+}
+
+.svgbtn:hover:not(:active) {
+    filter: drop-shadow(var(--btnShadowHover))
+}
