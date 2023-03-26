@@ -1,6 +1,6 @@
 export abstract class CanvasComponent {
-  public x: number;
-  public y: number;
+  public x = 0;
+  public y = 0;
   public focused = false;
   public hidden = false;
 

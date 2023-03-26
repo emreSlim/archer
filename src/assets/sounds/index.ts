@@ -8,8 +8,8 @@ export class Sound {
   loop = false;
 
   private isMuted = false;
-  private track: AudioBufferSourceNode;
-  private audioBuffer: AudioBuffer;
+  private track: AudioBufferSourceNode | null = null;
+  private audioBuffer: AudioBuffer | null = null;
 
   constructor(fileName: string) {
     this.load(fileName);

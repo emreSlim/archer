@@ -3,10 +3,7 @@ import { Number2D } from "../index";
 
 export class TransNumber2D extends TransitionableProperty<Number2D> {
   constructor(x: number, y: number) {
-    super();
-    this.val = new Number2D(x, y);
-    this.currentVal = new Number2D(x, y);
-    this.velocity = new Number2D(x, y);
+    super(new Number2D(x, y), new Number2D(x, y), new Number2D(0, 0));
   }
 
   setVal = (

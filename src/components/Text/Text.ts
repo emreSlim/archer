@@ -6,7 +6,7 @@ export class Text extends CanvasComponent {
   fontFamily = 'Courier New, Courier, monospace';
   style = '#00000088';
   centered = false;
-  metrics: TextMetrics;
+  metrics:TextMetrics|undefined
   constructor(
     text: string,
     x?: number,
@@ -41,7 +41,7 @@ export class Text extends CanvasComponent {
   doesPointIntercept(x: number, y: number): boolean {
     if (this.centered) {
       if (
-        x > this.x - this.metrics.width / 2 &&
+        this.metrics && x > this.x - this.metrics.width / 2 &&
         x < this.metrics.width / 2 + this.x &&
         y > this.y - this.fontSize / 2 &&
         y < this.fontSize / 2 + this.y
@@ -49,7 +49,7 @@ export class Text extends CanvasComponent {
         return true;
     } else {
       if (
-        x > this.x &&
+        this.metrics &&  x > this.x &&
         x < this.metrics.width + this.x &&
         y > this.y &&
         y < this.fontSize + this.y

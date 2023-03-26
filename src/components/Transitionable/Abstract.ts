@@ -5,6 +5,12 @@ export abstract class TransitionableProperty<T> {
   currentVal: T;
   protected velocity: T;
 
+  constructor(val: T, currentVal: T, velocity: T) {
+    this.val = val;
+    this.currentVal = currentVal;
+    this.velocity = velocity;
+  }
+
   protected onEndCB: (() => void) | undefined;
 
   protected onEnd = () => {

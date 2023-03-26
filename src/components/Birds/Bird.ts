@@ -14,7 +14,7 @@ export class Bird {
   ay = 0;
   flapSpeed = 2;
   /** stuck arrow */
-  arrow: Arrow;
+  arrow: Arrow | undefined;
   /** arrow angle offset */
   arrowAngleO = 0;
   /** arrow stick angle offset */

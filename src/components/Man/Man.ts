@@ -17,11 +17,11 @@ export class Man extends CanvasComponent {
   static DEFAULT_ANGLE = (3 / 2) * Math.PI;
   public facingRight = false;
 
-  public holdingArrow: Arrow;
+  public holdingArrow: Arrow | null = null;
   public arrowAO: number;
-  public holdingBow: Bow;
+  public holdingBow: Bow | null = null;
   // collide check box
-  public cBox: { x1: number; y1: number; x2: number; y2: number };
+  public cBox: { x1: number; y1: number; x2: number; y2: number } | undefined;
 
   private cBoxScope: Part[];
 
@@ -115,12 +115,13 @@ export class Man extends CanvasComponent {
   };
 
   isPointOutOfCBox = (x: number, y: number, margin: number) => {
-    return (
-      x < this.cBox.x1 - margin ||
-      y < this.cBox.y1 - margin ||
-      x > this.cBox.x2 + margin ||
-      y > this.cBox.y2 + margin
-    );
+    if (this.cBox)
+      return (
+        x < this.cBox.x1 - margin ||
+        y < this.cBox.y1 - margin ||
+        x > this.cBox.x2 + margin ||
+        y > this.cBox.y2 + margin
+      );
   };
 
   doesArrowHit = (a: Arrow) => {
@@ -164,9 +165,11 @@ export class Man extends CanvasComponent {
       this.holdingArrow.vx = dx * 13;
       this.holdingArrow.vy = dy * 13;
       this.holdingArrow.isMoving = true;
-      this.holdingBow.nockingPointPull.animate([-5, 2, 0], 0.3);
-      this.holdingArrow = null;
-      this.holdingBow = null;
+      if (this.holdingBow) {
+        this.holdingBow.nockingPointPull.animate([-5, 2, 0], 0.3);
+        this.holdingArrow = null;
+        this.holdingBow = null;
+      }
 
       window.setTimeout(() => {
         this.alboL.setAngleOffset(-(0.2 + Math.PI / 2), 0, false);
@@ -204,7 +207,7 @@ export class Man extends CanvasComponent {
     }
     this.palmL.setPos(arrow.tx, arrow.ty, this.facingRight, 0.2);
 
-    {
+    if (this.holdingBow && this.holdingArrow) {
       this.holdingBow.x = this.palmR.getPos().x;
       this.holdingBow.y = this.palmR.getPos().y;
       this.holdingBow.angle = this.holdingArrow.angle;
