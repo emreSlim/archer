@@ -112,7 +112,7 @@ export class Archerman {
       Archerman.HEIGHT / 2,
       50
     );
-    this.yourTurn.style = "green";
+  
     this.yourTurn.centered = true;
     this.yourTurn.hidden = true;
     this.canvas.width = Archerman.WIDTH;
@@ -604,6 +604,11 @@ export class Archerman {
       Archerman.HEIGHT / 2,
       50
     );
+
+    this.gameOverText.centered = true;
+    
+
+
     window.setTimeout(() => {
       if (this.mpi === lostPlayerIndex) {
         Archerman.loseSound.play();
@@ -612,8 +617,6 @@ export class Archerman {
       }
     }, 1500);
 
-    this.gameOverText.centered = true;
-    this.gameOverText.style = this.mpi === lostPlayerIndex ? "#900" : "#090";
     window.setTimeout(() => {
       if (!this.isTesting) this.ongameover(this.mpi !== lostPlayerIndex);
       this.stop();
@@ -682,7 +685,7 @@ export class Archerman {
     if (this.amIPlaying()) this.handleTurnChange();
     window.setTimeout(() => {
       this.isInteractable = true;
-      this.yourTurn.hidden = false;
+     if(this.amIPlaying()) this.yourTurn.hidden = false;
     }, 2000);
     this.play();
   };

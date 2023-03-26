@@ -3,8 +3,8 @@ import { CanvasComponent } from "..";
 export class Text extends CanvasComponent {
   text: string;
   fontSize: number = 12;
-  fontFamily: string;
-  style: string;
+  fontFamily = 'Courier New, Courier, monospace';
+  style = '#00000088';
   centered = false;
   metrics: TextMetrics;
   constructor(
