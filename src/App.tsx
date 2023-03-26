@@ -402,7 +402,7 @@ export class App extends React.Component<{}, AppState> {
             bottom: 10,
           }}
         >
-          1.0.3
+          1.0.4
         </p>
       </>
     );
