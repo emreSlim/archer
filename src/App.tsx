@@ -103,6 +103,7 @@ export class App extends React.Component<{}, AppState> {
   };
 
   loadGame = () => {
+    this.playClickSound();
     this.setState({ showUI: AppUI.LOADER });
     if (this.state.serverConn) this.state.serverConn.ws.close();
 
@@ -340,6 +341,12 @@ export class App extends React.Component<{}, AppState> {
     }
   };
 
+  playClickSound = () => {
+    if (!this.getSFXMuted()) {
+      clickSound.play();
+    }
+  }
+
   render = () => {
     return (
       <>
@@ -358,20 +365,16 @@ export class App extends React.Component<{}, AppState> {
           }}
         >
           {this.state.showUI !== AppUI.INIT && (
-            <Back
+            <button
               onClick={() => {
-                if (!this.getSFXMuted()) {
-                  clickSound.play();
-                }
+                window.dispatchEvent(new Event("back", { bubbles: false }));
+               this.playClickSound();
               }}
-            />
+            >Back</button>
           )}
           <button
             onClick={() => {
-              if (!this.getSFXMuted()) {
-                clickSound.play();
-              }
-
+              this.playClickSound();
               this.setMusicMuted(!this.getMusicMuted());
             }}
           >
@@ -379,11 +382,8 @@ export class App extends React.Component<{}, AppState> {
           </button>
           <button
             onClick={() => {
-              if (this.getSFXMuted()) {
-                clickSound.play();
-              }
-
               this.setSFXMuted(!this.getSFXMuted());
+              this.playClickSound();
             }}
           >
             sfx {this.getSFXMuted() ? "off" : "on"}

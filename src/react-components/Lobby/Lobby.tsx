@@ -90,8 +90,12 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
     }
   };
 
-  handleCreateBtnClick = () => {
+  playClickSound = () => {
     if (!this.props.sfxMuted) clickSound.play();
+  }
+
+  handleCreateBtnClick = () => {
+    this.playClickSound();
     this.setState({ showUI: LobbyUI.LOADER });
     createRoom(this.props.serverConn)
       .then((roomID) => {
@@ -112,7 +116,7 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
   };
 
   handleJoinBtnClick = () => {
-    if (!this.props.sfxMuted) clickSound.play();
+   this.playClickSound();
     if (Connection.isValidRoomID(this.state.roomID)) {
       this.setState({ showUI: LobbyUI.LOADER });
       joinRoom(this.props.serverConn, this.state.roomID.toUpperCase())
@@ -134,7 +138,7 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
   };
 
   handleReplayClick = () => {
-    if (!this.props.sfxMuted) clickSound.play();
+    this.playClickSound()
     this.props.game.play();
     this.props.onReplay();
   };
@@ -162,7 +166,7 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
             <button onClick={this.handleCreateBtnClick}>Create a Room</button>
             <button
               onClick={() => {
-                if (!this.props.sfxMuted) clickSound.play();
+               this.playClickSound();
                 this.setState({ showUI: LobbyUI.JOININPUT });
               }}
             >
@@ -182,7 +186,7 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
             {this.state.secondPlayerJoined && (
               <button
                 onClick={(e) => {
-                  if (!this.props.sfxMuted) clickSound.play();
+                  this.playClickSound();
                   this.props.onStartBtnClick(e);
                 }}
               >
