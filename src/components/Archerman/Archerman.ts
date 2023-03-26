@@ -17,6 +17,7 @@ import {
   Health,
   Text,
   Number2D,
+  AimPath
 } from "..";
 import { Img, Sound } from "../../assets/";
 
@@ -60,6 +61,8 @@ export class Archerman {
   pullStartEvent: GameMouseEvent;
   blood = new Blood(Archerman.WIDTH, Archerman.HEIGHT);
 
+
+
   birds = [
     new Bird(Archerman.WIDTH / 2, Archerman.HEIGHT / 2),
     new Bird(Archerman.WIDTH / 2, Archerman.HEIGHT / 2),
@@ -91,6 +94,8 @@ export class Archerman {
   private ePrev: GameMouseEvent;
   animationFrameRequest: number;
   yourTurn: Text;
+
+  aimPath = new AimPath();
 
   constructor() {
     this.canvas = document.createElement("canvas");
@@ -251,8 +256,11 @@ export class Archerman {
     }
     if (this.amIPlaying()) {
       this.powerIndicator.draw(this.ctx, elapsedTime);
+     if(this.pullStartEvent && !this.ca.isMoving) this.aimPath.draw(this.ctx,elapsedTime)
     }
     this.birds.forEach((b, i) => b.draw(this.ctx, elapsedTime));
+    
+
     this.ctx.resetTransform();
     this.yourTurn.draw(this.ctx, elapsedTime);
   };
@@ -458,10 +466,21 @@ export class Archerman {
       this.pullStartEvent.clientX - e.clientX,
       this.pullStartEvent.clientY - e.clientY,
       this.ca
-    );
-    if (this.amIPlaying()) {
-      this.onpull(e);
-    }
+      );
+
+      if (this.amIPlaying()) {
+        this.onpull(e);
+        
+    
+     {
+      //aim path state updates
+      this.aimPath.x = this.ca.hx
+        this.aimPath.y = this.ca.hy
+        const dx = this.cp.palmR.getPos().x - this.ca.tx,
+        dy = this.cp.palmR.getPos().y - this.ca.ty;
+        this.aimPath.updateState(dx*13,dy*13,this.ca.ax,this.ca.ay)}
+      }
+      
   };
   handlePullStart = (e: GameMouseEvent) => {
     this.yourTurn.hidden = true;
