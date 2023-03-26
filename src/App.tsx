@@ -23,9 +23,8 @@ interface AppState {
   log: string[];
   serverConn?: Connection;
   peerConn?: PeerConnection;
+  game?: Archerman;
 }
-
-const game = new Archerman();
 
 export class App extends React.Component<{}, AppState> {
   state: Readonly<AppState> = {
@@ -35,27 +34,6 @@ export class App extends React.Component<{}, AppState> {
   };
 
   componentDidMount = () => {
-    game.setMusicMute(this.getMusicMuted());
-    game.setSFXMute(this.getSFXMuted());
-    window.addEventListener("back", this.handleBackClick);
-
-    window.onkeyup = (e) => {
-      if (e.ctrlKey && e.shiftKey && e.altKey) {
-        game.isTesting = true;
-        game.start(0);
-        this.setState({ showUI: AppUI.CANVAS });
-        // switch (e.key) {
-        //   case 'M':
-        // }
-        window.onkeyup = null;
-      }
-    };
-    game.log = (s) => {
-      this.setState((state) => {
-        state.log.push(s);
-        return { log: state.log };
-      });
-    };
     document.addEventListener(
       "touchmove",
       function (e) {
@@ -64,8 +42,18 @@ export class App extends React.Component<{}, AppState> {
       { passive: false }
     );
 
-    game.ongameover = (won: boolean) => {
-      this.setState({ showUI: AppUI.LOBBY, lobbyDefaultUI: LobbyUI.REPLAY });
+    window.onkeyup = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.altKey) {
+        const game = new Archerman(0);
+        game.isTesting = true;
+        game.start();
+        this.setState({ showUI: AppUI.CANVAS,game });
+
+        // switch (e.key) {
+        //   case 'M':
+        // }
+        window.onkeyup = null;
+      }
     };
   };
 
@@ -78,7 +66,7 @@ export class App extends React.Component<{}, AppState> {
   };
 
   setMusicMuted = (val: boolean) => {
-    game.setMusicMute(val);
+    this.state.game?.setMusicMute(val);
     localStorage.setItem("MusicMuted", String(val));
     this.forceUpdate();
   };
@@ -88,7 +76,7 @@ export class App extends React.Component<{}, AppState> {
   };
 
   setSFXMuted = (val: boolean) => {
-    game.setSFXMute(val);
+    this.state.game?.setSFXMute(val);
     localStorage.setItem("SFXMuted", String(val));
     this.forceUpdate();
   };
@@ -97,7 +85,7 @@ export class App extends React.Component<{}, AppState> {
     switch (this.state.showUI) {
       case AppUI.CANVAS:
         this.exitRoom();
-        game.stop();
+        this.state.game?.stop();
         this.loadGame();
     }
   };
@@ -116,7 +104,7 @@ export class App extends React.Component<{}, AppState> {
     serverConn.addEventListener("second.player.left", () => {
       alert("Other player has left the room.");
       this.exitRoom();
-      game.stop();
+      this.state.game?.stop();
       this.loadGame();
     });
 
@@ -128,15 +116,7 @@ export class App extends React.Component<{}, AppState> {
 
   setPeerConnection = (serverConn: Connection) => {
     const peerConn = new PeerConnection(serverConn);
-    peerConn.onsetupcomplete = () => {
-      this.state.serverConn
-        .request<number>(new RequestPayload("get.player.position"))
-        .then((e) => {
-          if (e.data != null) {
-            this.playGame(e.data, peerConn);
-          }
-        });
-    };
+    peerConn.onsetupcomplete = this.playGame;
     this.setState({ peerConn });
   };
 
@@ -144,164 +124,194 @@ export class App extends React.Component<{}, AppState> {
     this.state.peerConn?.sendOffer();
   };
 
-  playGame = (playerIndex: number, peerConn: PeerConnection) => {
-    enum DataEventType {
-      PULL,
-      RELEASE,
-      TURN,
-      HIT,
-      ARROW_OUT_FRAME,
-      PULLSTART,
-      MOVE,
-      BIRDS_FLY,
-      BIRD_HIT,
-    }
+  playGame = async () => {
+    if (this.state.peerConn && this.state.serverConn) {
+      const myPlayerIndex = (
+        await this.state.serverConn.request<number>(
+          new RequestPayload("get.player.position")
+        )
+      ).data;
 
-    type Data<T> = {
-      type: DataEventType;
-      data?: T;
-    };
+      const game = new Archerman(myPlayerIndex);
+      game.setMusicMute(this.getMusicMuted());
+      game.setSFXMute(this.getSFXMuted());
+      window.addEventListener("back", this.handleBackClick);
 
-    this.setState({ showUI: AppUI.CANVAS });
-    game.onpull = (e) => {
-      peerConn.sendData<Data<GameMouseEvent>>({
-        data: e,
-        type: DataEventType.PULL,
-      });
-    };
-    game.onrelease = (...e) => {
-      peerConn.sendData<Data<any[]>>(
-        {
-          data: e,
-          type: DataEventType.RELEASE,
-        },
-        true
-      );
-    };
-    game.onturn = (airIntensity) => {
-      peerConn.sendData<Data<number>>(
-        {
-          data: airIntensity,
-          type: DataEventType.TURN,
-        },
-        true
-      );
-    };
-    game.onhit = (...args) => {
-      peerConn.sendData<Data<any[]>>(
-        {
-          data: args,
-          type: DataEventType.HIT,
-        },
-        true
-      );
-    };
-    game.onoutofframe = () => {
-      peerConn.sendData<Data<any>>(
-        {
-          type: DataEventType.ARROW_OUT_FRAME,
-        },
-        true
-      );
-    };
-    game.onpullstart = (e) => {
-      peerConn.sendData<Data<GameMouseEvent>>(
-        {
-          data: e,
-          type: DataEventType.PULLSTART,
-        },
-        true
-      );
-    };
+   
+      game.log = (s) => {
+        this.setState((state) => {
+          state.log.push(s);
+          return { log: state.log };
+        });
+      };
 
-    game.onplayermove = (...args) => {
-      peerConn.sendData<Data<number[]>>({
-        data: args,
-        type: DataEventType.MOVE,
-      });
-    };
+      game.ongameover = (won: boolean) => {
+        this.setState({ showUI: AppUI.LOBBY, lobbyDefaultUI: LobbyUI.REPLAY });
+      };
 
-    game.onbirdsfly = (args) => {
-      peerConn.sendData<Data<any[]>>(
-        {
-          data: args,
-          type: DataEventType.BIRDS_FLY,
-        },
-        true
-      );
-    };
-
-    game.onbirdhit = (index) => {
-      peerConn.sendData<Data<number>>(
-        {
-          data: index,
-          type: DataEventType.BIRD_HIT,
-        },
-        true
-      );
-    };
-
-    peerConn.ondata = (e: Data<any>) => {
-      switch (e.type) {
-        case DataEventType.PULL:
-          {
-            game.handlePullArrow(e.data);
-          }
-          break;
-        case DataEventType.RELEASE:
-          {
-            game.handleReleaseArrow(e.data[0], e.data[1]);
-            game.ca.angle = e.data[2];
-            game.ca.vx = e.data[3];
-            game.ca.vy = e.data[4];
-          }
-          break;
-        case DataEventType.TURN:
-          {
-            game.handleTurnChange(e.data);
-          }
-          break;
-        case DataEventType.HIT:
-          {
-            game.ca.angle = e.data[2];
-            game.ca.x = e.data[3];
-            game.ca.y = e.data[4];
-            game.ca.vx = e.data[5];
-            game.ca.vy = e.data[6];
-            game.handlePlayerHit(e.data[0], e.data[1]);
-          }
-          break;
-        case DataEventType.ARROW_OUT_FRAME:
-          {
-            game.handleArrowOutOfFrame();
-          }
-          break;
-        case DataEventType.PULLSTART:
-          {
-            game.handlePullStart(e.data);
-          }
-          break;
-        case DataEventType.MOVE:
-          {
-            game.handlePlayerMove(e.data[0], e.data[1]);
-          }
-          break;
-        case DataEventType.BIRDS_FLY:
-          {
-            game.handleBirdsFly(e.data);
-          }
-          break;
-        case DataEventType.BIRD_HIT: {
-          game.handleBirdHit(e.data);
-        }
+      enum DataEventType {
+        PULL,
+        RELEASE,
+        TURN,
+        HIT,
+        ARROW_OUT_FRAME,
+        PULLSTART,
+        MOVE,
+        BIRDS_FLY,
+        BIRD_HIT,
       }
-    };
-    game.start(playerIndex);
+
+      type Data<T> = {
+        type: DataEventType;
+        data?: T;
+      };
+
+      this.setState({ showUI: AppUI.CANVAS });
+      game.onpull = (e) => {
+        this.state.peerConn?.sendData<Data<GameMouseEvent>>({
+          data: e,
+          type: DataEventType.PULL,
+        });
+      };
+      game.onrelease = (...e) => {
+        this.state.peerConn?.sendData<Data<any[]>>(
+          {
+            data: e,
+            type: DataEventType.RELEASE,
+          },
+          true
+        );
+      };
+      game.onturn = (airIntensity) => {
+        this.state.peerConn?.sendData<Data<number>>(
+          {
+            data: airIntensity,
+            type: DataEventType.TURN,
+          },
+          true
+        );
+      };
+      game.onhit = (...args) => {
+        this.state.peerConn?.sendData<Data<any[]>>(
+          {
+            data: args,
+            type: DataEventType.HIT,
+          },
+          true
+        );
+      };
+      game.onoutofframe = () => {
+        this.state.peerConn?.sendData<Data<any>>(
+          {
+            type: DataEventType.ARROW_OUT_FRAME,
+          },
+          true
+        );
+      };
+      game.onpullstart = (e) => {
+        this.state.peerConn?.sendData<Data<GameMouseEvent>>(
+          {
+            data: e,
+            type: DataEventType.PULLSTART,
+          },
+          true
+        );
+      };
+
+      game.onplayermove = (...args) => {
+        this.state.peerConn?.sendData<Data<number[]>>({
+          data: args,
+          type: DataEventType.MOVE,
+        });
+      };
+
+      game.onbirdsfly = (args) => {
+        this.state.peerConn?.sendData<Data<any[]>>(
+          {
+            data: args,
+            type: DataEventType.BIRDS_FLY,
+          },
+          true
+        );
+      };
+
+      game.onbirdhit = (index) => {
+        this.state.peerConn?.sendData<Data<number>>(
+          {
+            data: index,
+            type: DataEventType.BIRD_HIT,
+          },
+          true
+        );
+      };
+
+      this.state.peerConn.ondata = (e: Data<any>) => {
+        switch (e.type) {
+          case DataEventType.PULL:
+            {
+              game.handlePullArrow(e.data);
+            }
+            break;
+          case DataEventType.RELEASE:
+            {
+              game.handleReleaseArrow(e.data[0], e.data[1]);
+              if (game.ca != null) {
+                game.ca.angle = e.data[2];
+                game.ca.vx = e.data[3];
+                game.ca.vy = e.data[4];
+              }
+            }
+            break;
+          case DataEventType.TURN:
+            {
+              game.handleTurnChange(e.data);
+            }
+            break;
+          case DataEventType.HIT:
+            {
+              if (game.ca != null) {
+                game.ca.angle = e.data[2];
+                game.ca.x = e.data[3];
+                game.ca.y = e.data[4];
+                game.ca.vx = e.data[5];
+                game.ca.vy = e.data[6];
+              }
+              game.handlePlayerHit(e.data[0], e.data[1]);
+            }
+            break;
+          case DataEventType.ARROW_OUT_FRAME:
+            {
+              game.handleArrowOutOfFrame();
+            }
+            break;
+          case DataEventType.PULLSTART:
+            {
+              game.handlePullStart(e.data);
+            }
+            break;
+          case DataEventType.MOVE:
+            {
+              game.handlePlayerMove(e.data[0], e.data[1]);
+            }
+            break;
+          case DataEventType.BIRDS_FLY:
+            {
+              game.handleBirdsFly(e.data);
+            }
+            break;
+          case DataEventType.BIRD_HIT: {
+            game.handleBirdHit(e.data);
+          }
+        }
+      };
+      game.start();
+      this.setState({ game });
+    }
   };
 
   exitRoom = () => {
-    this.state.serverConn.emit(new EventPayload("exit.room"));
-    game.stop();
+    this.state.serverConn?.emit(new EventPayload("exit.room"));
+    this.state.game?.stop();
   };
 
   getUI = () => {
@@ -312,7 +322,8 @@ export class App extends React.Component<{}, AppState> {
         const Game = React.memo(() => {
           const id = "canvas-wrapper";
           useEffect(() => {
-            document.getElementById(id)?.appendChild(game.canvas);
+            if (this.state.game)
+              document.getElementById(id)?.appendChild(this.state.game.canvas);
           }, []);
           return <div id={id} />;
         });
@@ -321,9 +332,7 @@ export class App extends React.Component<{}, AppState> {
       case AppUI.LOBBY:
         return (
           <Lobby
-            onReplay={() => {
-              this.setState({ showUI: AppUI.CANVAS });
-            }}
+            onReplay={this.playGame}
             exitRoom={this.exitRoom}
             onExitLobby={() => {
               this.setState({ showUI: AppUI.INIT });
@@ -333,7 +342,7 @@ export class App extends React.Component<{}, AppState> {
             onStartBtnClick={this.startGameBtnClickHandler}
             sfxMuted={this.getSFXMuted()}
             serverConn={this.state.serverConn}
-            game={game}
+            game={this.state.game}
           />
         );
       case AppUI.INIT:
@@ -345,7 +354,7 @@ export class App extends React.Component<{}, AppState> {
     if (!this.getSFXMuted()) {
       clickSound.play();
     }
-  }
+  };
 
   render = () => {
     return (
@@ -357,20 +366,24 @@ export class App extends React.Component<{}, AppState> {
             left: 20,
             right: 20,
             display: "flex",
-            justifyContent: game.isGamePlaying ? "center" : "flex-start",
+            justifyContent: this.state.game?.isGamePlaying
+              ? "center"
+              : "flex-start",
             gap: 20,
             zIndex: 1,
             alignItems: "center",
-            opacity: game.isGamePlaying ? 0.5 : 1,
+            opacity: this.state.game?.isGamePlaying ? 0.5 : 1,
           }}
         >
           {this.state.showUI !== AppUI.INIT && (
             <button
               onClick={() => {
                 window.dispatchEvent(new Event("back", { bubbles: false }));
-               this.playClickSound();
+                this.playClickSound();
               }}
-            >Back</button>
+            >
+              Back
+            </button>
           )}
           <button
             onClick={() => {

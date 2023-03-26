@@ -27,10 +27,10 @@ interface LobbyState {
 
 interface LobbyProps {
   defaultUI: LobbyUI;
-  serverConn: Connection;
+  serverConn?: Connection;
   sfxMuted: boolean;
   musicMuted: boolean;
-  game: Archerman;
+  game?: Archerman;
   onStartBtnClick: React.MouseEventHandler<HTMLButtonElement>;
   onReplay: () => void;
   exitRoom: () => void;
@@ -92,32 +92,41 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
 
   playClickSound = () => {
     if (!this.props.sfxMuted) clickSound.play();
-  }
+  };
 
   handleCreateBtnClick = () => {
     this.playClickSound();
-    this.setState({ showUI: LobbyUI.LOADER });
-    createRoom(this.props.serverConn)
-      .then((roomID) => {
-        if (Connection.isValidRoomID(roomID)) {
-          this.setState({ roomID, isRoomOwner: true, showUI: LobbyUI.JOINED });
-          this.waitForSecondPlayer();
-        }
-      })
-      .catch(() => {
-        this.setState({ showUI: LobbyUI.CREATE });
-      });
+    if (this.props.serverConn) {
+      this.setState({ showUI: LobbyUI.LOADER });
+      createRoom(this.props.serverConn)
+        .then((roomID) => {
+          if (roomID && Connection.isValidRoomID(roomID)) {
+            this.setState({
+              roomID,
+              isRoomOwner: true,
+              showUI: LobbyUI.JOINED,
+            });
+            this.waitForSecondPlayer();
+          }
+        })
+        .catch(() => {
+          this.setState({ showUI: LobbyUI.CREATE });
+        });
+    }
   };
 
   waitForSecondPlayer = () => {
-    this.props.serverConn.addEventListener("second.player.joined", () => {
+    this.props.serverConn?.addEventListener("second.player.joined", () => {
       this.setState({ secondPlayerJoined: true });
     });
   };
 
   handleJoinBtnClick = () => {
-   this.playClickSound();
-    if (Connection.isValidRoomID(this.state.roomID)) {
+    this.playClickSound();
+    if (
+      Connection.isValidRoomID(this.state.roomID) &&
+      this.props.serverConn != null
+    ) {
       this.setState({ showUI: LobbyUI.LOADER });
       joinRoom(this.props.serverConn, this.state.roomID.toUpperCase())
         .then((isSuccessful) => {
@@ -138,8 +147,8 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
   };
 
   handleReplayClick = () => {
-    this.playClickSound()
-    this.props.game.play();
+    this.playClickSound();
+    this.props.game?.play();
     this.props.onReplay();
   };
 
@@ -166,7 +175,7 @@ export class Lobby extends React.Component<LobbyProps, LobbyState> {
             <button onClick={this.handleCreateBtnClick}>Create a Room</button>
             <button
               onClick={() => {
-               this.playClickSound();
+                this.playClickSound();
                 this.setState({ showUI: LobbyUI.JOININPUT });
               }}
             >

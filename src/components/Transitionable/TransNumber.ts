@@ -2,9 +2,7 @@ import { TransitionableProperty } from ".";
 
 export class TransNumber extends TransitionableProperty<number> {
   constructor(val: number) {
-    super();
-    this.val = val;
-    this.currentVal = val;
+    super(val, val, 0);
   }
   /**
    *

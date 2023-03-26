@@ -39,7 +39,7 @@ export class PeerConnection extends RTCPeerConnection {
   /** out going data channel */
   readonly oDataChannel: RTCDataChannel;
   /** incoming data channel */
-  iDataChannel: RTCDataChannel;
+  // iDataChannel: RTCDataChannel;
   pendingACKs = new Map<number, number>();
 
   constructor(signallingConnection: Connection) {
@@ -108,10 +108,10 @@ export class PeerConnection extends RTCPeerConnection {
 
   onDataChannelHandler(e: RTCDataChannelEvent) {
     if (e.channel) {
-      this.iDataChannel = e.channel;
+      // this.iDataChannel = e.channel;
       if(logIsOn) console.log('received incoming DC',e.channel)
-      this.iDataChannel.onopen = () => {
-        this.iDataChannel.onmessage = (e: MessageEvent) => {
+      e.channel.onopen = () => {
+        e.channel.onmessage = (e: MessageEvent) => {
           const d = JSON.parse(e.data);
           if(logIsOn) console.log('received data',e.data)
           if (d instanceof Array) {
