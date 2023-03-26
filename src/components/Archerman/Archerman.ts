@@ -17,6 +17,7 @@ import {
   Health,
   Text,
   Number2D,
+  AimPath,
 } from "..";
 import { Img, Sound } from "../../assets/";
 
@@ -66,12 +67,13 @@ export class Archerman {
     new Bird(Archerman.WIDTH / 2, Archerman.HEIGHT / 2),
     new Bird(Archerman.WIDTH / 2, Archerman.HEIGHT / 2),
   ];
+
   airIntensity: number;
   gravity: number;
   ctx: CanvasRenderingContext2D;
   ctx2: CanvasRenderingContext2D;
   leaves: Leaf[] = [];
-  isPullBlocked = true;
+  isInteractable = false;
 
   powerIndicator: PowerIndicator;
   /** current scale */
@@ -92,6 +94,7 @@ export class Archerman {
   animationFrameRequest: number;
   yourTurn: Text;
 
+  aimPath = new AimPath();
   constructor() {
     this.canvas = document.createElement("canvas");
     this.ctx = this.canvas.getContext("2d", {
@@ -109,7 +112,7 @@ export class Archerman {
       Archerman.HEIGHT / 2,
       50
     );
-    this.yourTurn.style = "green";
+  
     this.yourTurn.centered = true;
     this.yourTurn.hidden = true;
     this.canvas.width = Archerman.WIDTH;
@@ -194,7 +197,7 @@ export class Archerman {
     }
     if (
       this.isGamePlaying &&
-      !this.isPullBlocked &&
+      this.isInteractable &&
       this.health.timer[this.cpi] > 0
     ) {
       this.health.timer[this.cpi] -= elapsedTime;
@@ -251,20 +254,25 @@ export class Archerman {
     }
     if (this.amIPlaying()) {
       this.powerIndicator.draw(this.ctx, elapsedTime);
+      if (this.pullStartEvent && !this.ca.isMoving && !this.isPullingBack())
+        this.aimPath.draw(this.ctx, elapsedTime);
     }
     this.birds.forEach((b, i) => b.draw(this.ctx, elapsedTime));
+
     this.ctx.resetTransform();
     this.yourTurn.draw(this.ctx, elapsedTime);
   };
   flipCP() {
     if (this.cpi != null) this.health.timer[this.cpi] = -1;
     this.cpi = this.cpi === 0 ? 1 : 0;
-    this.isPullBlocked = true;
-    if (this.isGamePlaying && this.amIPlaying()) {
+    this.isInteractable = false;
+    if (this.isGamePlaying) {
       window.setTimeout(() => {
-        Archerman.myTurnBell.play();
-        this.yourTurn.hidden = false;
-        this.isPullBlocked = false;
+        if (this.amIPlaying()) {
+          Archerman.myTurnBell.play();
+          this.yourTurn.hidden = false;
+        }
+        this.isInteractable = true;
       }, 1000);
     }
     if (this.isGamePlaying) this.health.timer[this.cpi] = Health.TIMER_MAX;
@@ -411,7 +419,7 @@ export class Archerman {
   handlePointerDown = (e: GameMouseEvent) => {
     if (
       !this.isGamePlaying ||
-      this.isPullBlocked ||
+      !this.isInteractable ||
       !this.amIPlaying() ||
       this.ca.isMoving
     )
@@ -427,7 +435,7 @@ export class Archerman {
     } else {
       this.ePrev = e;
     }
-    if (!this.ca.isMoving && this.isPullBlocked === false) {
+    if (!this.ca.isMoving && this.isInteractable) {
       window.addEventListener("pointermove", this.handlePointerMove);
     }
     window.addEventListener("pointerup", this.handlePointerUp);
@@ -459,8 +467,18 @@ export class Archerman {
       this.pullStartEvent.clientY - e.clientY,
       this.ca
     );
+
     if (this.amIPlaying()) {
       this.onpull(e);
+
+      {
+        //aim path state updates
+        this.aimPath.x = this.ca.hx;
+        this.aimPath.y = this.ca.hy;
+        const dx = this.cp.palmR.getPos().x - this.ca.tx,
+          dy = this.cp.palmR.getPos().y - this.ca.ty;
+        this.aimPath.updateState(dx * 13, dy * 13, this.ca.ay);
+      }
     }
   };
   handlePullStart = (e: GameMouseEvent) => {
@@ -477,10 +495,12 @@ export class Archerman {
     this.powerIndicator.hidden = true;
     se = { clientX: se.clientX, clientY: se.clientY };
     ee = { clientX: ee.clientX, clientY: ee.clientY };
-    if (this.isPullingBack(se, ee)) {
+
+    if (this.isPullingBack()) {
       this.pullStartEvent = null;
       return;
     }
+
     Archerman.arrowReleaseSound.play();
     this.cp.releaseArrow();
     if (this.amIPlaying())
@@ -489,6 +509,7 @@ export class Archerman {
     window.setTimeout(() => {
       this.pullStartEvent = null;
     }, 100);
+    this.aimPath.copyAsPreviousPath();
   };
   handleTurnChange = (airIntensity?: number) => {
     if (this.ca) this.ca.isMoving = false;
@@ -514,11 +535,11 @@ export class Archerman {
       return l.x < 0;
     }
   }
-  isPullingBack(se: GameMouseEvent, ee: GameMouseEvent) {
-    return this.cp.facingRight
-      ? se.clientX < ee.clientX
-      : se.clientX > ee.clientX;
-  }
+  isPullingBack = () => {
+    return this.cp.palmR.getPos().x - this.ca.tx > 0
+      ? !this.cp.facingRight
+      : this.cp.facingRight;
+  };
   log(str: string) {}
   onbirdhit(index: number) {}
   onbirdsfly(birdsFlyData: any[]) {}
@@ -536,6 +557,7 @@ export class Archerman {
   onpull(e: GameMouseEvent) {}
   onpullstart(e: GameMouseEvent) {}
   onplayermove = (x: number, y: number) => {};
+
   onrelease(
     se: GameMouseEvent,
     ee: GameMouseEvent,
@@ -543,6 +565,7 @@ export class Archerman {
     arrowVX: number,
     arrowVY: number
   ) {}
+
   onturn(airIntensity: number) {}
 
   play = () => {
@@ -564,10 +587,12 @@ export class Archerman {
     };
     this.animationFrameRequest = window.requestAnimationFrame(cb);
   };
-  setAirIntensity(airIntensity?: number) {
+
+  setAirIntensity = (airIntensity?: number) => {
     this.airIntensity = airIntensity ?? Random.int(-3, 3);
-  }
-  setGameOver(lostPlayerIndex: number) {
+  };
+
+  setGameOver = (lostPlayerIndex: number) => {
     this.health.resetTimers();
     this.isGamePlaying = false;
 
@@ -579,6 +604,11 @@ export class Archerman {
       Archerman.HEIGHT / 2,
       50
     );
+
+    this.gameOverText.centered = true;
+    
+
+
     window.setTimeout(() => {
       if (this.mpi === lostPlayerIndex) {
         Archerman.loseSound.play();
@@ -587,14 +617,13 @@ export class Archerman {
       }
     }, 1500);
 
-    this.gameOverText.centered = true;
-    this.gameOverText.style = this.mpi === lostPlayerIndex ? "#900" : "#090";
     window.setTimeout(() => {
       if (!this.isTesting) this.ongameover(this.mpi !== lostPlayerIndex);
       this.stop();
       if (this.isTesting) this.play();
     }, 4000);
-  }
+  };
+
   setSFXMute = (mute: boolean) => {
     [
       Archerman.arrowHitSound,
@@ -615,6 +644,7 @@ export class Archerman {
       }
     });
   };
+
   setLeafDirection = (l: Leaf) => {
     l.setAir(
       this.airIntensity * 75 + (Math.random() - 0.5) * 25,
@@ -632,6 +662,7 @@ export class Archerman {
       l.y = Random.int(Archerman.HEIGHT);
     } else l.hidden = true;
   };
+
   setMusicMute = (mute: boolean) => {
     if (mute) {
       Archerman.bgMusic.mute();
@@ -642,6 +673,7 @@ export class Archerman {
       }
     }
   };
+
   start = (myPlayerIndex: number) => {
     this.mpi = myPlayerIndex;
     this.powerIndicator = new PowerIndicator(
@@ -652,11 +684,12 @@ export class Archerman {
 
     if (this.amIPlaying()) this.handleTurnChange();
     window.setTimeout(() => {
-      this.isPullBlocked = false;
-      this.yourTurn.hidden = false;
+      this.isInteractable = true;
+     if(this.amIPlaying()) this.yourTurn.hidden = false;
     }, 2000);
     this.play();
   };
+
   stop = () => {
     this.isGamePlaying = false;
     this.addPlayers();
@@ -670,12 +703,14 @@ export class Archerman {
       }
     }
   };
+
   tick = (elapsedTime: number) => {
     this.updateFocus(elapsedTime);
     this.draw(elapsedTime);
     this.checkEvents(elapsedTime);
   };
-  timeoutHandler(pi: number) {
+
+  timeoutHandler = (pi: number) => {
     if (this.amIPlaying()) {
       this.onhit(
         pi,
@@ -689,7 +724,8 @@ export class Archerman {
       this.handlePlayerHit(pi, 1);
       this.handleTurnChange();
     }
-  }
+  };
+
   updateFocus = (elapsedTime: number) => {
     // update focus
     // if (this.cs.val !== 1)
@@ -707,6 +743,7 @@ export class Archerman {
     this.fw = w;
     this.fh = h;
   };
+
   updateScaling = () => {
     this.scale = innerWidth / this.canvas.width;
     this.canvas.style.scale = `${this.scale}`;

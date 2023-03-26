@@ -1,5 +1,6 @@
 export * from "./Component/";
 export * from "../assets";
+export * from './AimPath'
 export * from "./Archerman";
 export * from "./Arrow";
 export * from "./Birds";
