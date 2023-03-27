@@ -26,6 +26,8 @@ export class Bird {
   angle = 0;
   angleVelocity = 0; // tbd
 
+  timeout:NodeJS.Timeout|undefined
+
   static hitSound = new Sound("bird-hit.m4a");
   isAlive = true;
   constructor(x: number, y: number) {
@@ -33,10 +35,10 @@ export class Bird {
     this.y = y;
   }
 
-  inc = true;
-  i = 0;
-  sw = 187;
-  sh = 146;
+
+  private i = 0;
+  private sw = 187;
+  private sh = 146;
 
   draw(ctx: CanvasRenderingContext2D, elapsedTime: number): void {
     this.tick(elapsedTime); // move

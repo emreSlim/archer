@@ -33,21 +33,22 @@ export class App extends React.Component<{}, AppState> {
     log: [],
   };
 
+  handleTouchMove = (e: TouchEvent) => {
+    e.preventDefault();
+  };
+
   componentDidMount = () => {
-    document.addEventListener(
-      "touchmove",
-      function (e) {
-        e.preventDefault();
-      },
-      { passive: false }
-    );
+    document.addEventListener("touchmove", this.handleTouchMove, {
+      passive: false,
+    });
+    window.addEventListener("back", this.handleBackClick);
 
     window.onkeyup = (e) => {
       if (e.ctrlKey && e.shiftKey && e.altKey) {
-        const game = new Archerman(0);
+        const game = this.createGameInstance(0);
         game.isTesting = true;
         game.start();
-        this.setState({ showUI: AppUI.CANVAS,game });
+        this.setState({ showUI: AppUI.CANVAS, game });
 
         // switch (e.key) {
         //   case 'M':
@@ -59,6 +60,7 @@ export class App extends React.Component<{}, AppState> {
 
   componentWillUnmount = () => {
     window.removeEventListener("back", this.handleBackClick);
+    document.removeEventListener("touchmove", this.handleTouchMove);
   };
 
   getMusicMuted = () => {
@@ -124,20 +126,22 @@ export class App extends React.Component<{}, AppState> {
     this.state.peerConn?.sendOffer();
   };
 
+  createGameInstance = (myPlayerIndex: number) => {
+    const game = new Archerman(myPlayerIndex);
+    game.setMusicMute(this.getMusicMuted());
+    game.setSFXMute(this.getSFXMuted());
+    return game;
+  };
   playGame = async () => {
     if (this.state.peerConn && this.state.serverConn) {
-      const myPlayerIndex = (
-        await this.state.serverConn.request<number>(
-          new RequestPayload("get.player.position")
-        )
-      ).data;
+      const game = this.createGameInstance(
+        (
+          await this.state.serverConn.request<number>(
+            new RequestPayload("get.player.position")
+          )
+        ).data
+      );
 
-      const game = new Archerman(myPlayerIndex);
-      game.setMusicMute(this.getMusicMuted());
-      game.setSFXMute(this.getSFXMuted());
-      window.addEventListener("back", this.handleBackClick);
-
-   
       game.log = (s) => {
         this.setState((state) => {
           state.log.push(s);

@@ -360,6 +360,7 @@ export class Archerman {
       this.handleTurnChange();
     }
   };
+
   handleBirdsFly = (birdsFlyData: any[]) => {
     if (this.amIPlaying()) this.onbirdsfly(birdsFlyData);
 
@@ -372,20 +373,27 @@ export class Archerman {
     setTimeout(() => {
       this.birds.forEach((b, i) => {
         if (b.isAlive) {
+          if (b.timeout) {
+            clearTimeout(b.timeout);
+            b.timeout = undefined;
+          }
+
           b.fly(
             birdsFlyData[i * 3],
             birdsFlyData[i * 3 + 1],
             birdsFlyData[i * 3 + 2]
           );
         } else {
-          setTimeout(() => {
-            b.fly(
-              birdsFlyData[i * 3],
-              birdsFlyData[i * 3 + 1],
-              birdsFlyData[i * 3 + 2]
-            );
-            this.arrows.unshift();
-          }, 100000);
+          if (b.timeout == null) {
+            b.timeout = setTimeout(() => {
+              b.fly(
+                birdsFlyData[i * 3],
+                birdsFlyData[i * 3 + 1],
+                birdsFlyData[i * 3 + 2]
+              );
+              this.arrows.unshift();
+            }, 100000);
+          }
         }
       });
     }, 2000);
@@ -635,7 +643,6 @@ export class Archerman {
     );
 
     this.gameOverText.centered = true;
-  
 
     window.setTimeout(() => {
       if (this.mpi === lostPlayerIndex) {
