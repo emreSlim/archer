@@ -1,10 +1,11 @@
 import React, { useEffect } from "react";
-import { Back, clickSound, Loader, Lobby, LobbyUI } from "./react-components";
+import { Back, clickSound, Loader, Lobby, LobbyUI, Menu } from "./react-components";
 import {
   Connection,
   RequestPayload,
   PeerConnection,
   EventPayload,
+  LocalStorage,
 } from "./services";
 import { Archerman, GameMouseEvent } from "./components/";
 import "./style.css";
@@ -113,10 +114,10 @@ export class App extends React.Component<{}, AppState> {
     serverConn.connect().then(() => {
       this.setState({ showUI: AppUI.LOBBY, serverConn });
     });
-    this.setPeerConnection(serverConn);
+    this.setUpPeerConnection(serverConn);
   };
 
-  setPeerConnection = (serverConn: Connection) => {
+  setUpPeerConnection = (serverConn: Connection) => {
     const peerConn = new PeerConnection(serverConn);
     peerConn.onsetupcomplete = this.playGame;
     this.setState({ peerConn });
@@ -361,67 +362,72 @@ export class App extends React.Component<{}, AppState> {
   };
 
   render = () => {
-    return (
-      <>
-        <div
-          style={{
-            position: "absolute",
-            top: 20,
-            left: 20,
-            right: 20,
-            display: "flex",
-            justifyContent: this.state.game?.isGamePlaying
-              ? "center"
-              : "flex-start",
-            gap: 20,
-            zIndex: 1,
-            alignItems: "center",
-            opacity: this.state.game?.isGamePlaying ? 0.5 : 1,
-          }}
-        >
-          {this.state.showUI !== AppUI.INIT && (
-            <button
-              onClick={() => {
-                window.dispatchEvent(new Event("back", { bubbles: false }));
-                this.playClickSound();
-              }}
-            >
-              Back
-            </button>
-          )}
-          <button
-            onClick={() => {
-              this.playClickSound();
-              this.setMusicMuted(!this.getMusicMuted());
-            }}
-          >
-            music {this.getMusicMuted() ? "off" : "on"}
-          </button>
-          <button
-            onClick={() => {
-              this.setSFXMuted(!this.getSFXMuted());
-              this.playClickSound();
-            }}
-          >
-            sfx {this.getSFXMuted() ? "off" : "on"}
-          </button>
-          <div>
-            {this.state.log.map((l) => (
-              <p>{l}</p>
-            ))}
-          </div>
-        </div>
-        {this.getUI()}
-        <p
-          style={{
-            position: "fixed",
-            right: 10,
-            bottom: 10,
-          }}
-        >
-          1.0.4
-        </p>
-      </>
-    );
-  };
+    return <Menu/>
+  }
+
+  // render = () => {
+  //   return (
+  //     <>
+  //       <div
+  //         style={{
+  //           position: "absolute",
+  //           top: 20,
+  //           left: 20,
+  //           right: 20,
+  //           display: "flex",
+  //           justifyContent: this.state.game?.isGamePlaying
+  //             ? "center"
+  //             : "flex-start",
+  //           gap: 20,
+  //           zIndex: 1,
+  //           alignItems: "center",
+  //           opacity: this.state.game?.isGamePlaying ? 0.5 : 1,
+  //         }}
+  //       >
+  //         {this.state.showUI !== AppUI.INIT && (
+  //           <button
+  //             onClick={() => {
+  //               window.dispatchEvent(new Event("back", { bubbles: false }));
+  //               this.playClickSound();
+  //             }}
+  //           >
+  //             Back
+  //           </button>
+  //         )}
+  //         <button
+  //           onClick={() => {
+  //             this.playClickSound();
+  //             this.setMusicMuted(!this.getMusicMuted());
+  //           }}
+  //         >
+  //           music {this.getMusicMuted() ? "off" : "on"}
+  //         </button>
+  //         <button
+  //           onClick={() => {
+  //             this.setSFXMuted(!this.getSFXMuted());
+  //             this.playClickSound();
+  //           }}
+  //         >
+  //           sfx {this.getSFXMuted() ? "off" : "on"}
+  //         </button>
+  //         <div>
+  //           {this.state.log.map((l) => (
+  //             <p>{l}</p>
+  //           ))}
+  //         </div>
+  //       </div>
+  //       {this.getUI()}
+  //       <p
+  //         style={{
+  //           position: "fixed",
+  //           right: 10,
+  //           bottom: 10,
+  //         }}
+  //       >
+  //         1.0.4
+  //       </p>
+  //     </>
+  //   );
+  // };
 }
+

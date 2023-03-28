@@ -166,6 +166,7 @@ export class Archerman {
   amIPlaying = () => {
     return this.isTesting || this.cpi === this.mpi;
   };
+  
   checkEvents = (elapsedTime: number) => {
     if (this.ca?.isMoving && this.collisionCheckOn) {
       this.birds.forEach((b, i) => {
@@ -214,7 +215,7 @@ export class Archerman {
     ) {
       this.health.timer[this.cpi] -= elapsedTime;
       if (this.health.timer[this.cpi] < 10) {
-        if (Archerman.timerSound.isPaused && this.ca && !this.ca.isMoving) {
+        if (!Archerman.timerSound.isPlaying && this.ca && !this.ca.isMoving) {
           Archerman.timerSound.loop = true;
           Archerman.timerSound.play();
         }
