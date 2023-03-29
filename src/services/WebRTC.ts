@@ -41,6 +41,7 @@ export class PeerConnection extends RTCPeerConnection {
   /** incoming data channel */
   // iDataChannel: RTCDataChannel;
   pendingACKs = new Map<number, number>();
+  ackCallbacks = new Map<number,CallableFunction>();
 
   constructor(signallingConnection: Connection) {
     const configuration: RTCConfiguration = {
@@ -72,7 +73,7 @@ export class PeerConnection extends RTCPeerConnection {
     this.listenForDesc();
   }
 
-  sendData<T>(data: T, withAck?: boolean) {
+  sendData<T>(data: T, withAck?: boolean, ackCallback?:CallableFunction ) {
     if(logIsOn) console.log('sending data',data)
     if (withAck) {
      
@@ -85,6 +86,9 @@ export class PeerConnection extends RTCPeerConnection {
       }, 10000);
 
       this.pendingACKs.set(id, timerID);
+      if(ackCallback){
+        this.ackCallbacks.set(id,ackCallback);
+      }
     } else {
       this.oDataChannel.send(JSON.stringify(data));
     }
@@ -127,6 +131,11 @@ export class PeerConnection extends RTCPeerConnection {
             } else if (peerData.type === PeerDataType.ACK) {
               window.clearInterval(this.pendingACKs.get(peerData.id));
               this.pendingACKs.delete(peerData.id);
+
+              if(this.ackCallbacks.has(peerData.id)) {
+               this.ackCallbacks.get(peerData.id)?.();
+               this.ackCallbacks.delete(peerData.id)
+              }
             }
           } else {
             this.ondata(d);

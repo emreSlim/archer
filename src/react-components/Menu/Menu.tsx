@@ -215,6 +215,7 @@ enum DataEventType {
   MOVE,
   BIRDS_FLY,
   BIRD_HIT,
+  START
 }
 
 type Data<T> = {
@@ -233,7 +234,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
   state: Readonly<RoomJoinedState> = {
     selectedUI: 0,
     hasOtherPlayerJoined: !this.props.isOwnerOfRoom,
-    peerConn: new PeerConnection(this.props.serverConn),
+    peerConn:new PeerConnection(this.props.serverConn)
   };
 
   componentDidMount(): void {
@@ -242,8 +243,6 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
         "second.player.joined",
         this.handleOtherPlayerJoin
       );
-    }else{
-      this.createGameInstance()
     }
     
     this.props.serverConn.addEventListener(
@@ -251,7 +250,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       this.handleOtherPlayerLeave
     );
 
-    this.addListenersForPeerConnection();
+    this.addListenersForPeerConnection(this.state.peerConn);
   }
 
   componentDidUpdate = (
@@ -267,25 +266,29 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
         "second.player.joined",
         this.handleOtherPlayerJoin
       )}
+
       serverConn.removeEventListener(
         "second.player.left",
         this.handleOtherPlayerLeave
       );
+
+      this.state.peerConn?.close();
   }
 
-  addListenersForPeerConnection = () => {
-    this.state.peerConn.onsetupcomplete = () => {
-      console.log("connected", this.state.game);
-      if (this.state.game) {
-        this.setState({ selectedUI: 3 });
-        this.state.game.start();
-      }
+
+
+  addListenersForPeerConnection = (peerConn:PeerConnection) => {
+    peerConn.onsetupcomplete = async () => {
+    await this.createGameInstance(peerConn);
     };
 
-    this.state.peerConn.ondata = (e: Data<any>) => {
+    peerConn.ondata = (e: Data<any>) => {
       const game = this.state.game;
       if (game) {
         switch (e.type) {
+          case DataEventType.START:{
+            this.startGame();
+          };break;
           case DataEventType.PULL:
             {
               game.handlePullArrow(e.data);
@@ -346,7 +349,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
     };
   };
 
-  createGameInstance = async () => {
+  createGameInstance = async (peerConn:PeerConnection) => {
     const game = new Archerman(
       (
         await this.props.serverConn.request<number>(
@@ -355,17 +358,21 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       ).data
     );
     game.ongameover = (won: boolean) => {
-      this.setState({ selectedUI: 1 });
+      
+     
+
+      this.setState({ selectedUI: 0 });
+      
     };
 
     game.onpull = (e) => {
-      this.state.peerConn.sendData<Data<GameMouseEvent>>({
+      peerConn.sendData<Data<GameMouseEvent>>({
         data: e,
         type: DataEventType.PULL,
       });
     };
     game.onrelease = (...e) => {
-      this.state.peerConn.sendData<Data<any[]>>(
+      peerConn.sendData<Data<any[]>>(
         {
           data: e,
           type: DataEventType.RELEASE,
@@ -374,7 +381,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       );
     };
     game.onturn = (airIntensity) => {
-      this.state.peerConn.sendData<Data<number>>(
+      peerConn.sendData<Data<number>>(
         {
           data: airIntensity,
           type: DataEventType.TURN,
@@ -383,7 +390,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       );
     };
     game.onhit = (...args) => {
-      this.state.peerConn.sendData<Data<any[]>>(
+      peerConn.sendData<Data<any[]>>(
         {
           data: args,
           type: DataEventType.HIT,
@@ -392,7 +399,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       );
     };
     game.onoutofframe = () => {
-      this.state.peerConn.sendData<Data<any>>(
+      peerConn.sendData<Data<any>>(
         {
           type: DataEventType.ARROW_OUT_FRAME,
         },
@@ -400,7 +407,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       );
     };
     game.onpullstart = (e) => {
-      this.state.peerConn.sendData<Data<GameMouseEvent>>(
+      peerConn.sendData<Data<GameMouseEvent>>(
         {
           data: e,
           type: DataEventType.PULLSTART,
@@ -410,14 +417,14 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
     };
 
     game.onplayermove = (...args) => {
-      this.state.peerConn.sendData<Data<number[]>>({
+      peerConn.sendData<Data<number[]>>({
         data: args,
         type: DataEventType.MOVE,
       });
     };
 
     game.onbirdsfly = (args) => {
-      this.state.peerConn.sendData<Data<any[]>>(
+      peerConn.sendData<Data<any[]>>(
         {
           data: args,
           type: DataEventType.BIRDS_FLY,
@@ -427,7 +434,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
     };
 
     game.onbirdhit = (index) => {
-      this.state.peerConn.sendData<Data<number>>(
+      peerConn.sendData<Data<number>>(
         {
           data: index,
           type: DataEventType.BIRD_HIT,
@@ -436,10 +443,11 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       );
     };
     this.setState({ game });
+    return game;
   };
-
+  
   handleOtherPlayerJoin = () => {
-    this.createGameInstance();
+    this.state.peerConn?.sendOffer();
     this.setState({ hasOtherPlayerJoined: true });
   };
 
@@ -447,6 +455,22 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
     alert("Other player has left the room.");
     this.props.onLeaveClick();
   };
+
+
+  startGame = () => {
+
+    if (this.state.game) {
+      this.setState({ selectedUI: 3 });
+      this.state.game.start();
+    }else{
+      alert('something went wrong, please retry');
+      this.props.onLeaveClick()
+    }
+  }
+
+  handleStartBtnClick = () => {
+    this.state.peerConn.sendData<Data<undefined>>({type:DataEventType.START},true,this.startGame)
+  }
 
   render = () => (
     <>
@@ -466,16 +490,15 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
               hidden={
                 !this.state.hasOtherPlayerJoined || !this.props.isOwnerOfRoom
               }
-              onClick={() => {
-                this.state.peerConn?.sendOffer();
-                // this.setState({ selectedUI: 2 })
-              }}
+              onClick={this.handleStartBtnClick}
             >
               Start
             </Button>
           </>,
           //1
-          <Button>Replay</Button>,
+          <Button
+      
+          >Replay</Button>,
           //2
           <Loader />,
           //3

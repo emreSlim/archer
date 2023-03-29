@@ -112,6 +112,8 @@ export class Archerman {
       (Archerman.HEIGHT - PowerIndicator.h) / 2
     );
 
+    this.powerIndicator.hidden = true;
+
     this.yourTurn = new Text(
       "IT'S YOUR TURN!",
       Archerman.WIDTH / 2,
@@ -121,13 +123,22 @@ export class Archerman {
 
     this.yourTurn.centered = true;
     this.yourTurn.hidden = true;
+
     this.canvas.width = Archerman.WIDTH;
     this.canvas.height = Archerman.HEIGHT;
+  
     this.addPlayers();
     this.gravity = 150;
     this.addLeaves(20);
-    window.onresize = this.updateScaling;
+
+    Archerman.timerSound.volume = 0.7;
+    Archerman.bgMusic.loop = true;
+    Archerman.bgMusic.volume = 0.5;
+
     this.updateScaling();
+    window.onresize = this.updateScaling;
+    this.canvas.onpointerdown = this.handlePointerDown;
+
   }
 
   addLeaves(count: number) {
@@ -228,60 +239,59 @@ export class Archerman {
     }
   };
   draw = (elapsedTime: number) => {
-    if (this.ctx != null) {
-      //bg
-      this.ctx.drawImage(Archerman.BG, 0, 0, Archerman.WIDTH, Archerman.HEIGHT);
-      //wall
-      const ptrn = this.ctx.createPattern(Archerman.WALL, "repeat");
-      this.ctx.fillStyle = ptrn!;
-      this.ctx.fillRect(
-        0,
-        Archerman.HEIGHT - Archerman.CLIF_H,
-        Archerman.CLIF_W,
-        Archerman.CLIF_H
-      );
-      this.ctx.fillRect(
-        Archerman.WIDTH - Archerman.CLIF_W,
-        Archerman.HEIGHT - Archerman.CLIF_H,
-        Archerman.CLIF_W,
-        Archerman.CLIF_H
-      );
+    //bg
+    this.ctx.drawImage(Archerman.BG, 0, 0, Archerman.WIDTH, Archerman.HEIGHT);
+    //wall
+    const ptrn = this.ctx.createPattern(Archerman.WALL, "repeat");
+    this.ctx.fillStyle = ptrn!;
+    this.ctx.fillRect(
+      0,
+      Archerman.HEIGHT - Archerman.CLIF_H,
+      Archerman.CLIF_W,
+      Archerman.CLIF_H
+    );
+    this.ctx.fillRect(
+      Archerman.WIDTH - Archerman.CLIF_W,
+      Archerman.HEIGHT - Archerman.CLIF_H,
+      Archerman.CLIF_W,
+      Archerman.CLIF_H
+    );
 
-      //rendering objects
-      this.players.forEach((p) => {
-        p.draw(this.ctx, elapsedTime);
-      });
+    //rendering objects
+    this.players.forEach((p) => {
+      p.draw(this.ctx, elapsedTime);
+    });
 
-      this.arrows.forEach((a) => a.draw(this.ctx, elapsedTime));
-      this.bow.draw(this.ctx, elapsedTime);
-      this.blood.draw(this.ctx, elapsedTime);
-      this.health.draw(this.ctx, elapsedTime);
+    this.arrows.forEach((a) => a.draw(this.ctx, elapsedTime));
+    this.bow.draw(this.ctx, elapsedTime);
+    this.blood.draw(this.ctx, elapsedTime);
+    this.health.draw(this.ctx, elapsedTime);
 
-      this.leaves.forEach((l) => {
-        if (this.isLeafOutOfFrame(l)) {
-          this.setLeafDirection(l); //OPTIMIZATION SCOPE
-        }
-        l.draw(this.ctx, elapsedTime);
-      });
-      if (!this.isGamePlaying) {
-        this.gameOverText?.draw(this.ctx, elapsedTime);
+    this.leaves.forEach((l) => {
+      if (this.isLeafOutOfFrame(l)) {
+        this.setLeafDirection(l); //OPTIMIZATION SCOPE
       }
-      if (this.amIPlaying()) {
-        this.powerIndicator.draw(this.ctx, elapsedTime);
-        if (
-          this.pullStartEvent &&
-          this.ca &&
-          !this.ca.isMoving &&
-          !this.isPullingBack()
-        )
-          this.aimPath.draw(this.ctx, elapsedTime);
-      }
-      this.birds.forEach((b, i) => b.draw(this.ctx, elapsedTime));
-
-      this.ctx.resetTransform();
-      this.yourTurn.draw(this.ctx, elapsedTime);
+      l.draw(this.ctx, elapsedTime);
+    });
+    if (!this.isGamePlaying) {
+      this.gameOverText?.draw(this.ctx, elapsedTime);
     }
+    if (this.amIPlaying()) {
+      this.powerIndicator.draw(this.ctx, elapsedTime);
+      if (
+        this.pullStartEvent &&
+        this.ca &&
+        !this.ca.isMoving &&
+        !this.isPullingBack()
+      )
+        this.aimPath.draw(this.ctx, elapsedTime);
+    }
+    this.birds.forEach((b, i) => b.draw(this.ctx, elapsedTime));
+
+    this.ctx.resetTransform();
+    this.yourTurn.draw(this.ctx, elapsedTime);
   };
+
   flipCP() {
     if (this.cpi != null) this.health.timer[this.cpi] = -1;
     this.cpi = this.cpi === 0 ? 1 : 0;
@@ -417,7 +427,7 @@ export class Archerman {
       else window.setTimeout(Archerman.headshotReact.play, 300);
     }
     const newHealth = Math.max(
-      this.health.health[pi].val - (hit === 2 ? 48 : 16),
+      this.health.health[pi].val - (hit === 2 ? 480 : 160),
       0
     );
     this.health.health[pi].setVal(newHealth, 0.1);
@@ -544,6 +554,10 @@ export class Archerman {
     this.aimPath.copyAsPreviousPath();
   };
   handleTurnChange = (airIntensity?: number) => {
+    if(!this.isGamePlaying) {
+      this.arrows = [];
+      this.isGamePlaying = true;
+    }
     if (this.ca) this.ca.isMoving = false;
     this.setAirIntensity(airIntensity);
     if (this.amIPlaying()) this.onturn(this.airIntensity);
@@ -605,19 +619,10 @@ export class Archerman {
   onturn(airIntensity: number) {}
 
   play = () => {
-    Archerman.timerSound.volume = 0.7;
-    Archerman.bgMusic.loop = true;
-    Archerman.bgMusic.volume = 0.5;
-    Archerman.bgMusic.play();
-    this.isGamePlaying = true;
-    this.health.resetHealth();
-    this.health.timer[this.cpi] = Health.TIMER_MAX;
-    this.powerIndicator.hidden = true;
-    this.canvas.addEventListener("pointerdown", this.handlePointerDown);
     let prevTime: number;
-
-    if (this.animationFrameRequest)
+    if (this.animationFrameRequest) {
       window.cancelAnimationFrame(this.animationFrameRequest);
+    }
     const cb = (elapsedTime: number) => {
       if (prevTime != null) this.tick((elapsedTime - prevTime) / 1000);
       prevTime = elapsedTime;
@@ -711,24 +716,29 @@ export class Archerman {
   };
 
   start = () => {
-    this.powerIndicator.hidden = true;
+    this.health.resetHealth();
+    this.health.timer[this.cpi] = Health.TIMER_MAX;
 
-    this.arrows = [];
-    if (this.amIPlaying()) this.handleTurnChange();
+    Archerman.bgMusic.play();
+    if (this.amIPlaying()) {
+      this.handleTurnChange();
+    }
     window.setTimeout(() => {
       this.isInteractable = true;
       if (this.amIPlaying()) this.yourTurn.hidden = false;
     }, 2000);
+
     this.play();
   };
 
   stop = () => {
-    this.isGamePlaying = false;
-    this.addPlayers();
-    this.ca = undefined;
-    this.arrows = [];
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
+    this.canvas.remove();
 
+    if (this.animationFrameRequest) {
+      window.cancelAnimationFrame(this.animationFrameRequest);
+      this.animationFrameRequest = undefined
+    }
     for (let v of Object.values(Archerman)) {
       if (v instanceof Sound) {
         v.pause();
