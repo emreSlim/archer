@@ -1,4 +1,5 @@
 import React from 'react'
+import './style.css'
 
 export interface GameWindowProps {
   canvas?: HTMLCanvasElement;
@@ -10,5 +11,5 @@ export const GameWindow: React.FC<GameWindowProps> = (props) => {
     if (props.canvas) ref.current.appendChild(props.canvas);
   }, []);
 
-  return <div ref={ref} />;
+  return <div className='game-window' ref={ref} />;
 };

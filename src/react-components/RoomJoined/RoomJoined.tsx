@@ -36,8 +36,8 @@ export class RoomJoined extends React.Component<
     selectedUI: 0,
     hasOtherPlayerJoined: !this.props.isOwnerOfRoom,
     peerConn: new PeerConnection(this.props.serverConn),
-    isPlayerReady: this.props.isOwnerOfRoom,
-    isOpponentReady: !this.props.isOwnerOfRoom,
+    isPlayerReady: false,
+    isOpponentReady: false,
   };
 
   componentDidMount(): void {
@@ -55,12 +55,10 @@ export class RoomJoined extends React.Component<
 
     this.addListenersForPeerConnection(this.state.peerConn);
 
-    if (this.props.isOwnerOfRoom) {
-      this.state.peerConn.addPeerEventListener<boolean>(
-        PeerEventType.READY,
-        this.handleOpponentReadyStatusChange
-      );
-    }
+    this.state.peerConn.addPeerEventListener<boolean>(
+      PeerEventType.READY,
+      this.handleOpponentReadyStatusChange
+    );
   }
 
   componentDidUpdate = (
@@ -83,14 +81,15 @@ export class RoomJoined extends React.Component<
       this.handleOtherPlayerLeave
     );
 
-    if (this.props.isOwnerOfRoom) {
-      this.state.peerConn.removePeerEventListener(
-        PeerEventType.READY,
-        this.handleOpponentReadyStatusChange
-      );
-    }
+    this.state.peerConn.removePeerEventListener(
+      PeerEventType.READY,
+      this.handleOpponentReadyStatusChange
+    );
 
     this.state.peerConn?.close();
+    if (this.state.game) {
+      this.state.game.stop();
+    }
   }
 
   handleOpponentReadyStatusChange = (isOpponentReady: boolean) =>
@@ -170,7 +169,7 @@ export class RoomJoined extends React.Component<
       ).data
     );
     game.ongameover = (won: boolean) => {
-    if(!this.props.isOwnerOfRoom)  this.handleReadyBtnClick();
+      if (!this.props.isOwnerOfRoom) this.handleReadyBtnClick();
       this.setState({ selectedUI: 0 });
     };
 
@@ -217,7 +216,16 @@ export class RoomJoined extends React.Component<
 
   handleOtherPlayerLeave = () => {
     alert("Other player has left the room.");
-    this.props.onLeaveClick();
+
+    if (this.state.game?.isGamePlaying) {
+      this.state.game.setGameOver(this.state.game.getOtherPlayerIndex());
+
+      window.setTimeout(() => {
+        this.props.onLeaveClick();
+      }, 2000);
+    } else {
+      this.props.onLeaveClick();
+    }
   };
 
   startGame = () => {
@@ -231,17 +239,17 @@ export class RoomJoined extends React.Component<
   };
 
   handleStartBtnClick = async () => {
-      this.state.peerConn.emit(
-        PeerEventType.START,
-        undefined,
-        true,
-        this.startGame
-      );
+    this.state.peerConn.emit(
+      PeerEventType.START,
+      undefined,
+      true,
+      this.startGame
+    );
   };
 
   handleReadyBtnClick = () => {
     this.setState((s) => {
-      this.state.peerConn.emit(PeerEventType.READY, !s.isPlayerReady);
+      this.state.peerConn.emit(PeerEventType.READY, !s.isPlayerReady, true);
       return { isPlayerReady: !s.isPlayerReady };
     });
   };
@@ -261,22 +269,20 @@ export class RoomJoined extends React.Component<
             </p>
             <ReadyStatus
               player={this.state.isPlayerReady}
-              opponent={this.state.isOpponentReady}
+              opponent={
+                this.state.hasOtherPlayerJoined
+                  ? this.state.isOpponentReady
+                  : undefined
+              }
             />
-            {this.props.isOwnerOfRoom ? (
-              <Button
-                disabled={
-                  !this.state.isPlayerReady || !this.state.isOpponentReady
-                }
-                onClick={this.handleStartBtnClick}
-              >
-                Start
-              </Button>
-            ) : (
-              <Button onClick={this.handleReadyBtnClick}>
-                Mark As {!this.state.isPlayerReady ? "Ready" : "Not Ready"}
-              </Button>
-            )}
+            {this.state.hasOtherPlayerJoined &&
+              (this.state.isOpponentReady ? (
+                <Button onClick={this.handleStartBtnClick}>Start</Button>
+              ) : (
+                <Button onClick={this.handleReadyBtnClick}>
+                  Mark As {!this.state.isPlayerReady ? "Ready" : "Not Ready"}
+                </Button>
+              ))}
           </>,
           //1
           <Button>Replay</Button>,

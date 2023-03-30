@@ -148,31 +148,7 @@ export class Archerman {
     }
   }
 
-  initPlayersPos = () => {
-    this.players[0].setPosition(
-      Archerman.CLIF_W / 2,
-      Archerman.HEIGHT -
-        Archerman.CLIF_H -
-        (Math.max(
-          this.players[0].footL.getPos().y,
-          this.players[0].footR.getPos().y
-        ) -
-          this.players[0].y)
-    );
 
-    this.players[1].setPosition(
-      Archerman.WIDTH - Archerman.CLIF_W / 2,
-      Archerman.HEIGHT -
-        Archerman.CLIF_H -
-        (Math.max(
-          this.players[1].footL.getPos().y,
-          this.players[1].footR.getPos().y
-        ) -
-          this.players[1].y)
-    );
-
-    this.players.forEach((p) => p.resetPosition());
-  };
 
   amIPlaying = () => {
     return this.isTesting || this.cpi === this.mpi;
@@ -357,6 +333,7 @@ export class Archerman {
       h
     ).data;
   };
+  getOtherPlayerIndex = () =>  this.mpi === 0 ? 1 : 0
   handleArrowOutOfFrame = () => {
     this.pa = this.arrows.pop();
     if (this.amIPlaying()) this.onoutofframe();
@@ -588,6 +565,32 @@ export class Archerman {
     this.cp.holdBowArrow(this.bow, a);
   };
 
+  initPlayersPos = () => {
+    this.players[0].setPosition(
+      Archerman.CLIF_W / 2,
+      Archerman.HEIGHT -
+        Archerman.CLIF_H -
+        (Math.max(
+          this.players[0].footL.getPos().y,
+          this.players[0].footR.getPos().y
+        ) -
+          this.players[0].y)
+    );
+
+    this.players[1].setPosition(
+      Archerman.WIDTH - Archerman.CLIF_W / 2,
+      Archerman.HEIGHT -
+        Archerman.CLIF_H -
+        (Math.max(
+          this.players[1].footL.getPos().y,
+          this.players[1].footR.getPos().y
+        ) -
+          this.players[1].y)
+    );
+
+    this.players.forEach((p) => p.resetPosition());
+  };
+
   isLeafOutOfFrame(l: Leaf) {
     if (l.hidden) return;
     if (this.airIntensity > 0) {
@@ -666,13 +669,15 @@ export class Archerman {
 
     this.gameOverText.centered = true;
 
+    Archerman.bgMusic.pause();
+
     window.setTimeout(() => {
       if (this.mpi === lostPlayerIndex) {
         Archerman.loseSound.play();
       } else {
         Archerman.winSound.play();
       }
-    }, 1500);
+    }, 500);
 
     window.setTimeout(() => {
       if (!this.isTesting) this.ongameover(this.mpi !== lostPlayerIndex);

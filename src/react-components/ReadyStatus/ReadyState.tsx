@@ -1,7 +1,7 @@
 import React from "react";
 import './style.css'
 
-export const ReadyStatus: React.FC<{ player: boolean; opponent: boolean }> = (
+export const ReadyStatus: React.FC<{ player: boolean; opponent: boolean|undefined }> = (
   props
 ) => {
   return (
@@ -9,7 +9,7 @@ export const ReadyStatus: React.FC<{ player: boolean; opponent: boolean }> = (
       <p>Ready Status:</p>
       <div className="ready-state-container">
       <StatusBox name="Me" ready={props.player} />
-      <StatusBox name="Opponent" ready={props.opponent} />
+      {props.opponent!=null && <StatusBox name="Opponent" ready={props.opponent} />}
       </div>
     </div>
   );
