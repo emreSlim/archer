@@ -44,6 +44,7 @@ export enum PeerEventType {
   BIRDS_FLY,
   BIRD_HIT,
   START,
+  READY
 }
 
 type PeerEventArray<T = unknown> = [
@@ -228,7 +229,7 @@ export class PeerConnection extends WebRTC {
 
   removePeerEventListener = (
     type: PeerEventType,
-    cb: PeerEventListener<unknown>
+    cb: PeerEventListener<any>
   ) => {
     this.peerEventListeners.get(type)?.delete(cb);
   };

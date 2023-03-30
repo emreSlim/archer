@@ -57,6 +57,9 @@ html {
 
 }
 
+p {
+    margin: 0px;
+}
 
 button {
     background: var(--themeBGColor);
@@ -72,14 +75,20 @@ button {
 }
 
 
-button:active {
+button:active:not(:disabled) {
     box-shadow: var(--btnShadowActive);
 }
 
-button:hover:not(:active) {
+button:hover:not(:active):not(:disabled) {
     box-shadow: var(--btnShadowHover);
 }
 
+
+button:disabled{
+    background: #555;
+    color:#AAA;
+    cursor: not-allowed;
+}
 .svgbtn {
     filter: drop-shadow(var(--btnShadowNormal))
 }

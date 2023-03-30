@@ -1,6 +1,5 @@
 import React from "react";
-import { LocalStorage } from "../../services";
-import { Button, clickSound, clickSoundd } from "..";
+import { Button,  clickSoundd } from "..";
 import "./style.css";
 import { Sound } from "../../assets/";
 
@@ -51,7 +50,7 @@ export const SoundControls = () => {
         }
       >
         <span className="sound-btn-text-container">
-          Sound Effects {sfxOn && <span>✓</span>}
+          Sound Effects {sfxOn && <span>&#x2713</span>}
         </span>
         <input
           className="sound-range-input"

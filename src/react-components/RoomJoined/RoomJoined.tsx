@@ -1,10 +1,16 @@
-import React from 'react'
+import React from "react";
 import { Archerman, GameMouseEvent } from "../../components";
-import { Connection, PeerConnection, PeerEventType, PeerRequestType, RequestPayload } from "../../services";
-import { Button } from '../Buttons';
-import { Loader } from '../Loaders';
-import { GameWindow, ReadyStatus } from '..';
-import { Router } from '../Router';
+import {
+  Connection,
+  PeerConnection,
+  PeerEventType,
+  PeerRequestType,
+  RequestPayload,
+} from "../../services";
+import { Button } from "../Buttons";
+import { Loader } from "../Loaders";
+import { GameWindow, ReadyStatus } from "..";
+import { Router } from "../Router";
 
 interface RoomJoinedProps {
   onLeaveClick: (e?: React.MouseEvent) => void;
@@ -13,23 +19,25 @@ interface RoomJoinedProps {
   serverConn: Connection;
 }
 
-
- interface RoomJoinedState {
+interface RoomJoinedState {
   selectedUI: number;
   hasOtherPlayerJoined: boolean;
   game?: Archerman;
   peerConn: PeerConnection;
   isPlayerReady: boolean;
-  isOpponentReady:boolean;
+  isOpponentReady: boolean;
 }
 
-export class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
+export class RoomJoined extends React.Component<
+  RoomJoinedProps,
+  RoomJoinedState
+> {
   state: Readonly<RoomJoinedState> = {
     selectedUI: 0,
     hasOtherPlayerJoined: !this.props.isOwnerOfRoom,
     peerConn: new PeerConnection(this.props.serverConn),
     isPlayerReady: this.props.isOwnerOfRoom,
-    isOpponentReady:!this.props.isOwnerOfRoom
+    isOpponentReady: !this.props.isOwnerOfRoom,
   };
 
   componentDidMount(): void {
@@ -47,10 +55,12 @@ export class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState
 
     this.addListenersForPeerConnection(this.state.peerConn);
 
-    this.state.peerConn.addPeerRequestListener(
-      PeerRequestType.TEST,
-      () => this.state.isPlayerReady
-    );
+    if (this.props.isOwnerOfRoom) {
+      this.state.peerConn.addPeerEventListener<boolean>(
+        PeerEventType.READY,
+        this.handleOpponentReadyStatusChange
+      );
+    }
   }
 
   componentDidUpdate = (
@@ -73,8 +83,18 @@ export class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState
       this.handleOtherPlayerLeave
     );
 
+    if (this.props.isOwnerOfRoom) {
+      this.state.peerConn.removePeerEventListener(
+        PeerEventType.READY,
+        this.handleOpponentReadyStatusChange
+      );
+    }
+
     this.state.peerConn?.close();
   }
+
+  handleOpponentReadyStatusChange = (isOpponentReady: boolean) =>
+    this.setState({ isOpponentReady });
 
   addListenersForPeerConnection = (peerConn: PeerConnection) => {
     peerConn.onsetupcomplete = async () => {
@@ -150,6 +170,7 @@ export class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState
       ).data
     );
     game.ongameover = (won: boolean) => {
+    if(!this.props.isOwnerOfRoom)  this.handleReadyBtnClick();
       this.setState({ selectedUI: 0 });
     };
 
@@ -210,16 +231,19 @@ export class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState
   };
 
   handleStartBtnClick = async () => {
-    const res = await this.state.peerConn.request(PeerRequestType.TEST)
-    console.log(res)
-    if (res === true) {
       this.state.peerConn.emit(
         PeerEventType.START,
         undefined,
         true,
         this.startGame
       );
-    }
+  };
+
+  handleReadyBtnClick = () => {
+    this.setState((s) => {
+      this.state.peerConn.emit(PeerEventType.READY, !s.isPlayerReady);
+      return { isPlayerReady: !s.isPlayerReady };
+    });
   };
 
   render = () => (
@@ -232,18 +256,27 @@ export class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState
         elems={[
           //0
           <>
-            <p style={{alignSelf:'flex-start'}}>
+            <p style={{ alignSelf: "flex-start" }}>
               RoomID: <strong> {this.props.roomID}</strong>
             </p>
-            <ReadyStatus player={this.state.isPlayerReady} opponent={this.state.isOpponentReady}/>
-            <Button
-              hidden={
-                !this.state.hasOtherPlayerJoined || !this.props.isOwnerOfRoom
-              }
-              onClick={this.handleStartBtnClick}
-            >
-              Start
-            </Button>
+            <ReadyStatus
+              player={this.state.isPlayerReady}
+              opponent={this.state.isOpponentReady}
+            />
+            {this.props.isOwnerOfRoom ? (
+              <Button
+                disabled={
+                  !this.state.isPlayerReady || !this.state.isOpponentReady
+                }
+                onClick={this.handleStartBtnClick}
+              >
+                Start
+              </Button>
+            ) : (
+              <Button onClick={this.handleReadyBtnClick}>
+                Mark As {!this.state.isPlayerReady ? "Ready" : "Not Ready"}
+              </Button>
+            )}
           </>,
           //1
           <Button>Replay</Button>,
