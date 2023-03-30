@@ -668,7 +668,8 @@ export class Archerman {
     );
 
     this.gameOverText.centered = true;
-
+    this.yourTurn.hidden = true
+    
     Archerman.bgMusic.pause();
 
     window.setTimeout(() => {
