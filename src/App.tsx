@@ -134,184 +134,184 @@ export class App extends React.Component<{}, AppState> {
     return game;
   };
   playGame = async () => {
-    if (this.state.peerConn && this.state.serverConn) {
-      const game = this.createGameInstance(
-        (
-          await this.state.serverConn.request<number>(
-            new RequestPayload("get.player.position")
-          )
-        ).data
-      );
+    // if (this.state.peerConn && this.state.serverConn) {
+    //   const game = this.createGameInstance(
+    //     (
+    //       await this.state.serverConn.request<number>(
+    //         new RequestPayload("get.player.position")
+    //       )
+    //     ).data
+    //   );
 
-      game.log = (s) => {
-        this.setState((state) => {
-          state.log.push(s);
-          return { log: state.log };
-        });
-      };
+    //   game.log = (s) => {
+    //     this.setState((state) => {
+    //       state.log.push(s);
+    //       return { log: state.log };
+    //     });
+    //   };
 
-      game.ongameover = (won: boolean) => {
-        this.setState({ showUI: AppUI.LOBBY, lobbyDefaultUI: LobbyUI.REPLAY });
-      };
+    //   game.ongameover = (won: boolean) => {
+    //     this.setState({ showUI: AppUI.LOBBY, lobbyDefaultUI: LobbyUI.REPLAY });
+    //   };
 
-      enum DataEventType {
-        PULL,
-        RELEASE,
-        TURN,
-        HIT,
-        ARROW_OUT_FRAME,
-        PULLSTART,
-        MOVE,
-        BIRDS_FLY,
-        BIRD_HIT,
-      }
+    //   enum DataEventType {
+    //     PULL,
+    //     RELEASE,
+    //     TURN,
+    //     HIT,
+    //     ARROW_OUT_FRAME,
+    //     PULLSTART,
+    //     MOVE,
+    //     BIRDS_FLY,
+    //     BIRD_HIT,
+    //   }
 
-      type Data<T> = {
-        type: DataEventType;
-        data?: T;
-      };
+    //   type Data<T> = {
+    //     type: DataEventType;
+    //     data?: T;
+    //   };
 
-      this.setState({ showUI: AppUI.CANVAS });
-      game.onpull = (e) => {
-        this.state.peerConn?.sendData<Data<GameMouseEvent>>({
-          data: e,
-          type: DataEventType.PULL,
-        });
-      };
-      game.onrelease = (...e) => {
-        this.state.peerConn?.sendData<Data<any[]>>(
-          {
-            data: e,
-            type: DataEventType.RELEASE,
-          },
-          true
-        );
-      };
-      game.onturn = (airIntensity) => {
-        this.state.peerConn?.sendData<Data<number>>(
-          {
-            data: airIntensity,
-            type: DataEventType.TURN,
-          },
-          true
-        );
-      };
-      game.onhit = (...args) => {
-        this.state.peerConn?.sendData<Data<any[]>>(
-          {
-            data: args,
-            type: DataEventType.HIT,
-          },
-          true
-        );
-      };
-      game.onoutofframe = () => {
-        this.state.peerConn?.sendData<Data<any>>(
-          {
-            type: DataEventType.ARROW_OUT_FRAME,
-          },
-          true
-        );
-      };
-      game.onpullstart = (e) => {
-        this.state.peerConn?.sendData<Data<GameMouseEvent>>(
-          {
-            data: e,
-            type: DataEventType.PULLSTART,
-          },
-          true
-        );
-      };
+    //   this.setState({ showUI: AppUI.CANVAS });
+    //   game.onpull = (e) => {
+    //     this.state.peerConn?.sendData<Data<GameMouseEvent>>({
+    //       data: e,
+    //       type: DataEventType.PULL,
+    //     });
+    //   };
+    //   game.onrelease = (...e) => {
+    //     this.state.peerConn?.sendData<Data<any[]>>(
+    //       {
+    //         data: e,
+    //         type: DataEventType.RELEASE,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onturn = (airIntensity) => {
+    //     this.state.peerConn?.sendData<Data<number>>(
+    //       {
+    //         data: airIntensity,
+    //         type: DataEventType.TURN,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onhit = (...args) => {
+    //     this.state.peerConn?.sendData<Data<any[]>>(
+    //       {
+    //         data: args,
+    //         type: DataEventType.HIT,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onoutofframe = () => {
+    //     this.state.peerConn?.sendData<Data<any>>(
+    //       {
+    //         type: DataEventType.ARROW_OUT_FRAME,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onpullstart = (e) => {
+    //     this.state.peerConn?.sendData<Data<GameMouseEvent>>(
+    //       {
+    //         data: e,
+    //         type: DataEventType.PULLSTART,
+    //       },
+    //       true
+    //     );
+    //   };
 
-      game.onplayermove = (...args) => {
-        this.state.peerConn?.sendData<Data<number[]>>({
-          data: args,
-          type: DataEventType.MOVE,
-        });
-      };
+    //   game.onplayermove = (...args) => {
+    //     this.state.peerConn?.sendData<Data<number[]>>({
+    //       data: args,
+    //       type: DataEventType.MOVE,
+    //     });
+    //   };
 
-      game.onbirdsfly = (args) => {
-        this.state.peerConn?.sendData<Data<any[]>>(
-          {
-            data: args,
-            type: DataEventType.BIRDS_FLY,
-          },
-          true
-        );
-      };
+    //   game.onbirdsfly = (args) => {
+    //     this.state.peerConn?.sendData<Data<any[]>>(
+    //       {
+    //         data: args,
+    //         type: DataEventType.BIRDS_FLY,
+    //       },
+    //       true
+    //     );
+    //   };
 
-      game.onbirdhit = (index) => {
-        this.state.peerConn?.sendData<Data<number>>(
-          {
-            data: index,
-            type: DataEventType.BIRD_HIT,
-          },
-          true
-        );
-      };
+    //   game.onbirdhit = (index) => {
+    //     this.state.peerConn?.sendData<Data<number>>(
+    //       {
+    //         data: index,
+    //         type: DataEventType.BIRD_HIT,
+    //       },
+    //       true
+    //     );
+    //   };
 
-      this.state.peerConn.ondata = (e: Data<any>) => {
-        switch (e.type) {
-          case DataEventType.PULL:
-            {
-              game.handlePullArrow(e.data);
-            }
-            break;
-          case DataEventType.RELEASE:
-            {
-              game.handleReleaseArrow(e.data[0], e.data[1]);
-              if (game.ca != null) {
-                game.ca.angle = e.data[2];
-                game.ca.vx = e.data[3];
-                game.ca.vy = e.data[4];
-              }
-            }
-            break;
-          case DataEventType.TURN:
-            {
-              game.handleTurnChange(e.data);
-            }
-            break;
-          case DataEventType.HIT:
-            {
-              if (game.ca != null) {
-                game.ca.angle = e.data[2];
-                game.ca.x = e.data[3];
-                game.ca.y = e.data[4];
-                game.ca.vx = e.data[5];
-                game.ca.vy = e.data[6];
-              }
-              game.handlePlayerHit(e.data[0], e.data[1]);
-            }
-            break;
-          case DataEventType.ARROW_OUT_FRAME:
-            {
-              game.handleArrowOutOfFrame();
-            }
-            break;
-          case DataEventType.PULLSTART:
-            {
-              game.handlePullStart(e.data);
-            }
-            break;
-          case DataEventType.MOVE:
-            {
-              game.handlePlayerMove(e.data[0], e.data[1]);
-            }
-            break;
-          case DataEventType.BIRDS_FLY:
-            {
-              game.handleBirdsFly(e.data);
-            }
-            break;
-          case DataEventType.BIRD_HIT: {
-            game.handleBirdHit(e.data);
-          }
-        }
-      };
-      game.start();
-      this.setState({ game });
-    }
+    //   this.state.peerConn.ondata = (e: Data<any>) => {
+    //     switch (e.type) {
+    //       case DataEventType.PULL:
+    //         {
+    //           game.handlePullArrow(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.RELEASE:
+    //         {
+    //           game.handleReleaseArrow(e.data[0], e.data[1]);
+    //           if (game.ca != null) {
+    //             game.ca.angle = e.data[2];
+    //             game.ca.vx = e.data[3];
+    //             game.ca.vy = e.data[4];
+    //           }
+    //         }
+    //         break;
+    //       case DataEventType.TURN:
+    //         {
+    //           game.handleTurnChange(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.HIT:
+    //         {
+    //           if (game.ca != null) {
+    //             game.ca.angle = e.data[2];
+    //             game.ca.x = e.data[3];
+    //             game.ca.y = e.data[4];
+    //             game.ca.vx = e.data[5];
+    //             game.ca.vy = e.data[6];
+    //           }
+    //           game.handlePlayerHit(e.data[0], e.data[1]);
+    //         }
+    //         break;
+    //       case DataEventType.ARROW_OUT_FRAME:
+    //         {
+    //           game.handleArrowOutOfFrame();
+    //         }
+    //         break;
+    //       case DataEventType.PULLSTART:
+    //         {
+    //           game.handlePullStart(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.MOVE:
+    //         {
+    //           game.handlePlayerMove(e.data[0], e.data[1]);
+    //         }
+    //         break;
+    //       case DataEventType.BIRDS_FLY:
+    //         {
+    //           game.handleBirdsFly(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.BIRD_HIT: {
+    //         game.handleBirdHit(e.data);
+    //       }
+    //     }
+    //   };
+    //   game.start();
+    //   this.setState({ game });
+    // }
   };
 
   exitRoom = () => {

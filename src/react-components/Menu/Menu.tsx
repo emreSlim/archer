@@ -5,7 +5,11 @@ import { Archerman, GameMouseEvent } from "../../components/index";
 import { Connection } from "../../services/connection";
 import { createRoom, leaveRoom } from "../../services/createRoom";
 import { joinRoom } from "../../services/joinRoom";
-import { PeerConnection } from "../../services/WebRTC";
+import {
+  PeerConnection,
+  PeerEventType,
+  PeerRequestType,
+} from "../../services/";
 import "./styles.css";
 
 interface MenuProps {}
@@ -205,21 +209,8 @@ interface RoomJoinedProps {
   serverConn: Connection;
 }
 
-enum DataEventType {
-  PULL,
-  RELEASE,
-  TURN,
-  HIT,
-  ARROW_OUT_FRAME,
-  PULLSTART,
-  MOVE,
-  BIRDS_FLY,
-  BIRD_HIT,
-  START
-}
-
 type Data<T> = {
-  type: DataEventType;
+  type: PeerEventType;
   data?: T;
 };
 
@@ -228,13 +219,15 @@ interface RoomJoinedState {
   hasOtherPlayerJoined: boolean;
   game?: Archerman;
   peerConn: PeerConnection;
+  ready: boolean;
 }
 
 class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
   state: Readonly<RoomJoinedState> = {
     selectedUI: 0,
     hasOtherPlayerJoined: !this.props.isOwnerOfRoom,
-    peerConn:new PeerConnection(this.props.serverConn)
+    peerConn: new PeerConnection(this.props.serverConn),
+    ready: this.props.isOwnerOfRoom,
   };
 
   componentDidMount(): void {
@@ -244,13 +237,18 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
         this.handleOtherPlayerJoin
       );
     }
-    
+
     this.props.serverConn.addEventListener(
       "second.player.left",
       this.handleOtherPlayerLeave
     );
 
     this.addListenersForPeerConnection(this.state.peerConn);
+
+    this.state.peerConn.addPeerRequestListener(
+      PeerRequestType.TEST,
+      () => this.state.ready
+    );
   }
 
   componentDidUpdate = (
@@ -265,91 +263,83 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       serverConn.removeEventListener(
         "second.player.joined",
         this.handleOtherPlayerJoin
-      )}
-
-      serverConn.removeEventListener(
-        "second.player.left",
-        this.handleOtherPlayerLeave
       );
+    }
 
-      this.state.peerConn?.close();
+    serverConn.removeEventListener(
+      "second.player.left",
+      this.handleOtherPlayerLeave
+    );
+
+    this.state.peerConn?.close();
   }
 
-
-
-  addListenersForPeerConnection = (peerConn:PeerConnection) => {
+  addListenersForPeerConnection = (peerConn: PeerConnection) => {
     peerConn.onsetupcomplete = async () => {
-    await this.createGameInstance(peerConn);
+      await this.createGameInstance(peerConn);
     };
 
-    peerConn.ondata = (e: Data<any>) => {
-      const game = this.state.game;
-      if (game) {
-        switch (e.type) {
-          case DataEventType.START:{
-            this.startGame();
-          };break;
-          case DataEventType.PULL:
-            {
-              game.handlePullArrow(e.data);
-            }
-            break;
-          case DataEventType.RELEASE:
-            {
-              game.handleReleaseArrow(e.data[0], e.data[1]);
-              if (game.ca != null) {
-                game.ca.angle = e.data[2];
-                game.ca.vx = e.data[3];
-                game.ca.vy = e.data[4];
-              }
-            }
-            break;
-          case DataEventType.TURN:
-            {
-              game.handleTurnChange(e.data);
-            }
-            break;
-          case DataEventType.HIT:
-            {
-              if (game.ca != null) {
-                game.ca.angle = e.data[2];
-                game.ca.x = e.data[3];
-                game.ca.y = e.data[4];
-                game.ca.vx = e.data[5];
-                game.ca.vy = e.data[6];
-              }
-              game.handlePlayerHit(e.data[0], e.data[1]);
-            }
-            break;
-          case DataEventType.ARROW_OUT_FRAME:
-            {
-              game.handleArrowOutOfFrame();
-            }
-            break;
-          case DataEventType.PULLSTART:
-            {
-              game.handlePullStart(e.data);
-            }
-            break;
-          case DataEventType.MOVE:
-            {
-              game.handlePlayerMove(e.data[0], e.data[1]);
-            }
-            break;
-          case DataEventType.BIRDS_FLY:
-            {
-              game.handleBirdsFly(e.data);
-            }
-            break;
-          case DataEventType.BIRD_HIT: {
-            game.handleBirdHit(e.data);
-          }
+    peerConn.addPeerEventListener<undefined>(
+      PeerEventType.START,
+      this.startGame
+    );
+    peerConn.addPeerEventListener<GameMouseEvent>(PeerEventType.PULL, (data) =>
+      this.state.game?.handlePullArrow(data)
+    );
+
+    peerConn.addPeerEventListener<
+      [GameMouseEvent, GameMouseEvent, number, number, number]
+    >(PeerEventType.RELEASE, (data) => {
+      if (data && this.state.game) {
+        const game = this.state.game;
+        game.handleReleaseArrow(data[0], data[1]);
+        if (game.ca != null) {
+          game.ca.angle = data[2];
+          game.ca.vx = data[3];
+          game.ca.vy = data[4];
         }
       }
-    };
+    });
+    peerConn.addPeerEventListener<number>(PeerEventType.TURN, (data) => {
+      this.state.game?.handleTurnChange(data);
+    });
+
+    peerConn.addPeerEventListener<number[]>(PeerEventType.HIT, (data) => {
+      if (this.state.game) {
+        const game = this.state.game;
+        if (game.ca != null) {
+          game.ca.angle = data[2];
+          game.ca.x = data[3];
+          game.ca.y = data[4];
+          game.ca.vx = data[5];
+          game.ca.vy = data[6];
+        }
+        game.handlePlayerHit(data[0], data[1]);
+      }
+    });
+
+    peerConn.addPeerEventListener<undefined>(
+      PeerEventType.ARROW_OUT_FRAME,
+      () => this.state.game?.handleArrowOutOfFrame()
+    );
+    peerConn.addPeerEventListener<GameMouseEvent>(
+      PeerEventType.PULLSTART,
+      (data) => this.state.game?.handlePullStart(data)
+    );
+
+    peerConn.addPeerEventListener<[number, number]>(
+      PeerEventType.MOVE,
+      (data) => this.state.game?.handlePlayerMove(data[0], data[1])
+    );
+    peerConn.addPeerEventListener<number[]>(PeerEventType.BIRDS_FLY, (data) =>
+      this.state.game?.handleBirdsFly(data)
+    );
+    peerConn.addPeerEventListener<number>(PeerEventType.BIRD_HIT, (data) =>
+      this.state.game?.handleBirdHit(data)
+    );
   };
 
-  createGameInstance = async (peerConn:PeerConnection) => {
+  createGameInstance = async (peerConn: PeerConnection) => {
     const game = new Archerman(
       (
         await this.props.serverConn.request<number>(
@@ -358,94 +348,45 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
       ).data
     );
     game.ongameover = (won: boolean) => {
-      
-     
-
       this.setState({ selectedUI: 0 });
-      
     };
 
     game.onpull = (e) => {
-      peerConn.sendData<Data<GameMouseEvent>>({
-        data: e,
-        type: DataEventType.PULL,
-      });
+      peerConn.emit(PeerEventType.PULL, e);
     };
     game.onrelease = (...e) => {
-      peerConn.sendData<Data<any[]>>(
-        {
-          data: e,
-          type: DataEventType.RELEASE,
-        },
-        true
-      );
+      peerConn.emit(PeerEventType.RELEASE, e);
     };
     game.onturn = (airIntensity) => {
-      peerConn.sendData<Data<number>>(
-        {
-          data: airIntensity,
-          type: DataEventType.TURN,
-        },
-        true
-      );
+      peerConn.emit(PeerEventType.TURN, airIntensity);
     };
+
     game.onhit = (...args) => {
-      peerConn.sendData<Data<any[]>>(
-        {
-          data: args,
-          type: DataEventType.HIT,
-        },
-        true
-      );
+      peerConn.emit(PeerEventType.HIT, args);
     };
     game.onoutofframe = () => {
-      peerConn.sendData<Data<any>>(
-        {
-          type: DataEventType.ARROW_OUT_FRAME,
-        },
-        true
-      );
+      peerConn.emit(PeerEventType.ARROW_OUT_FRAME, undefined, true);
     };
+
     game.onpullstart = (e) => {
-      peerConn.sendData<Data<GameMouseEvent>>(
-        {
-          data: e,
-          type: DataEventType.PULLSTART,
-        },
-        true
-      );
+      peerConn.emit(PeerEventType.PULLSTART, e, true);
     };
 
     game.onplayermove = (...args) => {
-      peerConn.sendData<Data<number[]>>({
-        data: args,
-        type: DataEventType.MOVE,
-      });
+      peerConn.emit(PeerEventType.MOVE, args);
     };
 
     game.onbirdsfly = (args) => {
-      peerConn.sendData<Data<any[]>>(
-        {
-          data: args,
-          type: DataEventType.BIRDS_FLY,
-        },
-        true
-      );
+      peerConn.emit(PeerEventType.BIRDS_FLY, args);
     };
 
     game.onbirdhit = (index) => {
-      peerConn.sendData<Data<number>>(
-        {
-          data: index,
-          type: DataEventType.BIRD_HIT,
-        },
-        true
-      );
+      peerConn.emit(PeerEventType.BIRD_HIT, index, true);
     };
     this.setState({ game });
     return game;
   };
-  
+
   handleOtherPlayerJoin = () => {
     this.state.peerConn?.sendOffer();
     this.setState({ hasOtherPlayerJoined: true });
@@ -456,21 +397,28 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
     this.props.onLeaveClick();
   };
 
-
   startGame = () => {
-
     if (this.state.game) {
       this.setState({ selectedUI: 3 });
       this.state.game.start();
-    }else{
-      alert('something went wrong, please retry');
-      this.props.onLeaveClick()
+    } else {
+      alert("something went wrong, please retry");
+      this.props.onLeaveClick();
     }
-  }
+  };
 
-  handleStartBtnClick = () => {
-    this.state.peerConn.sendData<Data<undefined>>({type:DataEventType.START},true,this.startGame)
-  }
+  handleStartBtnClick = async () => {
+    const res = await this.state.peerConn.request(PeerRequestType.TEST)
+    console.log(res)
+    if (res === true) {
+      this.state.peerConn.emit(
+        PeerEventType.START,
+        undefined,
+        true,
+        this.startGame
+      );
+    }
+  };
 
   render = () => (
     <>
@@ -496,9 +444,7 @@ class RoomJoined extends React.Component<RoomJoinedProps, RoomJoinedState> {
             </Button>
           </>,
           //1
-          <Button
-      
-          >Replay</Button>,
+          <Button>Replay</Button>,
           //2
           <Loader />,
           //3

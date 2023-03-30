@@ -4,44 +4,12 @@ import { Connection, EventPayload } from "./";
 const logIsOn = false;
 
 
-enum PeerDataType {
-  DATA,
-  ACK,
-}
-
-type PeerDataArray<T = unknown> = [
-  PeerDataType,
-  /** numerical id */
-  number,
-  /** data */
-  T?
-];
-
-class PeerData<T = unknown> {
-  type: PeerDataType;
-  id: number;
-  data?: T;
-  constructor(type: PeerDataType, id: number, data?: T) {
-    this.type = type;
-    this.id = id;
-    this.data = data;
-  }
-  toArray = () => {
-    const arr: PeerDataArray<T> = [this.type, this.id];
-    if (this.data != null) arr[2] = this.data;
-    return arr;
-  };
-  static fromArray = <T>(arr: PeerDataArray<T>) => new PeerData(...arr);
-}
-
-export class PeerConnection extends RTCPeerConnection {
+export class WebRTC extends RTCPeerConnection {
   readonly s: Connection;
   /** out going data channel */
   readonly oDataChannel: RTCDataChannel;
   /** incoming data channel */
   // iDataChannel: RTCDataChannel;
-  pendingACKs = new Map<number, number>();
-  ackCallbacks = new Map<number,CallableFunction>();
 
   constructor(signallingConnection: Connection) {
     const configuration: RTCConfiguration = {
@@ -73,27 +41,6 @@ export class PeerConnection extends RTCPeerConnection {
     this.listenForDesc();
   }
 
-  sendData<T>(data: T, withAck?: boolean, ackCallback?:CallableFunction ) {
-    if(logIsOn) console.log('sending data',data)
-    if (withAck) {
-     
-      const id = Random.int(999999, 100000);
-      const d = new PeerData<T>(PeerDataType.DATA, id, data);
-
-      this.oDataChannel.send(JSON.stringify(d.toArray()));
-      const timerID = window.setInterval(() => {
-        this.oDataChannel.send(JSON.stringify(d.toArray()));
-      }, 10000);
-
-      this.pendingACKs.set(id, timerID);
-      if(ackCallback){
-        this.ackCallbacks.set(id,ackCallback);
-      }
-    } else {
-      this.oDataChannel.send(JSON.stringify(data));
-    }
-  }
-
   ondata(data: any) {}
   onsetupcomplete() {}
 
@@ -101,7 +48,7 @@ export class PeerConnection extends RTCPeerConnection {
     this.s.addEventListener<RTCIceCandidate>("ice.candidate", async (e) => {
       if (e.data) {
         try {
-          if(logIsOn) console.log('received ice',e.data)
+          if (logIsOn) console.log("received ice", e.data);
           await this.addIceCandidate(e.data);
         } catch (e) {
           console.error(e);
@@ -113,33 +60,12 @@ export class PeerConnection extends RTCPeerConnection {
   onDataChannelHandler(e: RTCDataChannelEvent) {
     if (e.channel) {
       // this.iDataChannel = e.channel;
-      if(logIsOn) console.log('received incoming DC',e.channel)
+      if (logIsOn) console.log("received incoming DC", e.channel);
       e.channel.onopen = () => {
         e.channel.onmessage = (e: MessageEvent) => {
           const d = JSON.parse(e.data);
-          if(logIsOn) console.log('received data',e.data)
-          if (d instanceof Array) {
-            const peerData = PeerData.fromArray(d as PeerDataArray);
-            if (peerData.type === PeerDataType.DATA) {
-              this.ondata(peerData.data);
-              //send ack
-              this.oDataChannel.send(
-                JSON.stringify(
-                  new PeerData(PeerDataType.ACK, peerData.id).toArray()
-                )
-              );
-            } else if (peerData.type === PeerDataType.ACK) {
-              window.clearInterval(this.pendingACKs.get(peerData.id));
-              this.pendingACKs.delete(peerData.id);
-
-              if(this.ackCallbacks.has(peerData.id)) {
-               this.ackCallbacks.get(peerData.id)?.();
-               this.ackCallbacks.delete(peerData.id)
-              }
-            }
-          } else {
-            this.ondata(d);
-          }
+          if (logIsOn) console.log("received data", e.data);
+          this.ondata(d);
         };
         this.onsetupcomplete();
       };
@@ -151,7 +77,7 @@ export class PeerConnection extends RTCPeerConnection {
       const ep = new EventPayload<RTCIceCandidate>("ice.candidate");
       ep.data = e.candidate;
       this.s.emit(ep);
-      if(logIsOn) console.log('recevied ice candidate',e.candidate)
+      if (logIsOn) console.log("recevied ice candidate", e.candidate);
     }
   }
 
@@ -162,7 +88,7 @@ export class PeerConnection extends RTCPeerConnection {
         const description = e.data;
         if (description) {
           await this.setRemoteDescription(description);
-          if(logIsOn) console.log('received remote desc',description)
+          if (logIsOn) console.log("received remote desc", description);
           if (!this.localDescription) {
             await this.sendAnswer();
           }
@@ -177,8 +103,7 @@ export class PeerConnection extends RTCPeerConnection {
     const ep = new EventPayload<RTCSessionDescriptionInit>("connect.opponent");
     ep.data = desc;
     this.s.emit(ep);
-    if(logIsOn) console.log('sending answer',desc)
-
+    if (logIsOn) console.log("sending answer", desc);
   }
 
   async sendOffer() {
@@ -187,7 +112,6 @@ export class PeerConnection extends RTCPeerConnection {
     const ep = new EventPayload<RTCSessionDescriptionInit>("connect.opponent");
     ep.data = desc;
     this.s.emit(ep);
-    if(logIsOn) console.log('sending offer',desc)
-
+    if (logIsOn) console.log("sending offer", desc);
   }
 }
