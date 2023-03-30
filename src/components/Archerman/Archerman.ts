@@ -43,7 +43,7 @@ export class Archerman {
   static bgMusic = new Sound("bg_music.m4a");
 
   canvas: HTMLCanvasElement;
-  players: Man[] = [];
+  players = [new Man(-100, -100, true), new Man(-100, -100, false)];
   arrows: Arrow[] = [];
   /** current player index */
   cpi = 1; // gets flipped to 0 on init call
@@ -126,8 +126,8 @@ export class Archerman {
 
     this.canvas.width = Archerman.WIDTH;
     this.canvas.height = Archerman.HEIGHT;
-  
-    this.addPlayers();
+
+    this.initPlayersPos();
     this.gravity = 150;
     this.addLeaves(20);
 
@@ -138,7 +138,6 @@ export class Archerman {
     this.updateScaling();
     window.onresize = this.updateScaling;
     this.canvas.onpointerdown = this.handlePointerDown;
-
   }
 
   addLeaves(count: number) {
@@ -149,35 +148,36 @@ export class Archerman {
     }
   }
 
-  addPlayers = () => {
-    const p1 = new Man(1, 1, true);
-    const p2 = new Man(1, 1, false);
-
-    p1.setPosition(
+  initPlayersPos = () => {
+    this.players[0].setPosition(
       Archerman.CLIF_W / 2,
       Archerman.HEIGHT -
         Archerman.CLIF_H -
-        (Math.max(p1.footL.getPos().y, p1.footR.getPos().y) - p1.y)
+        (Math.max(
+          this.players[0].footL.getPos().y,
+          this.players[0].footR.getPos().y
+        ) -
+          this.players[0].y)
     );
 
-    p2.setPosition(
+    this.players[1].setPosition(
       Archerman.WIDTH - Archerman.CLIF_W / 2,
       Archerman.HEIGHT -
         Archerman.CLIF_H -
-        (Math.max(p2.footL.getPos().y, p2.footR.getPos().y) - p2.y)
+        (Math.max(
+          this.players[1].footL.getPos().y,
+          this.players[1].footR.getPos().y
+        ) -
+          this.players[1].y)
     );
 
-    p1.updateCBox();
-    p2.updateCBox();
-
-    this.players.push(p1);
-    this.players.push(p2);
+    this.players.forEach((p) => p.resetPosition());
   };
 
   amIPlaying = () => {
     return this.isTesting || this.cpi === this.mpi;
   };
-  
+
   checkEvents = (elapsedTime: number) => {
     if (this.ca?.isMoving && this.collisionCheckOn) {
       this.birds.forEach((b, i) => {
@@ -214,8 +214,7 @@ export class Archerman {
             this.ca.vx,
             this.ca.vy
           );
-          this.handlePlayerHit(playerIndex, hit);
-          this.handleTurnChange();
+          this.handlePlayerHit(playerIndex, hit) && this.handleTurnChange();
         }
       }
     }
@@ -427,7 +426,7 @@ export class Archerman {
       else window.setTimeout(Archerman.headshotReact.play, 300);
     }
     const newHealth = Math.max(
-      this.health.health[pi].val - (hit === 2 ? 480 : 160),
+      this.health.health[pi].val - (hit === 2 ? 48 : 16),
       0
     );
     this.health.health[pi].setVal(newHealth, 0.1);
@@ -452,7 +451,9 @@ export class Archerman {
     );
     if (newHealth <= 0) {
       this.setGameOver(pi);
+      return false;
     }
+    return true;
   };
   handlePointerDown = (e: GameMouseEvent) => {
     if (
@@ -554,10 +555,6 @@ export class Archerman {
     this.aimPath.copyAsPreviousPath();
   };
   handleTurnChange = (airIntensity?: number) => {
-    if(!this.isGamePlaying) {
-      this.arrows = [];
-      this.isGamePlaying = true;
-    }
     if (this.ca) this.ca.isMoving = false;
     this.setAirIntensity(airIntensity);
     if (this.amIPlaying()) this.onturn(this.airIntensity);
@@ -573,6 +570,24 @@ export class Archerman {
     this.arrows.push(a);
     this.cp.holdBowArrow(this.bow, a);
   };
+
+  initialTurn = (airIntensity?: number) => {
+    if (!this.isGamePlaying) {
+      this.isGamePlaying = true;
+    }
+    this.setAirIntensity(airIntensity);
+    if (this.amIPlaying()) {
+      this.handleBirdsFly(this.getBirdsFlyData());
+    }
+    this.leaves.forEach(this.setLeafDirection);
+    const a = new Arrow();
+    a.ay = this.gravity;
+    a.ax = this.airIntensity * 16;
+    this.ca = a;
+    this.arrows.push(a);
+    this.cp.holdBowArrow(this.bow, a);
+  };
+
   isLeafOutOfFrame(l: Leaf) {
     if (l.hidden) return;
     if (this.airIntensity > 0) {
@@ -638,6 +653,7 @@ export class Archerman {
   setGameOver = (lostPlayerIndex: number) => {
     this.health.resetTimers();
     this.isGamePlaying = false;
+    if (this.ca) this.ca.isMoving = false;
 
     this.gameOverText = new Text(
       `${this.mpi === lostPlayerIndex ? "Alas" : "Congrats"}! You ${
@@ -718,17 +734,16 @@ export class Archerman {
   start = () => {
     this.health.resetHealth();
     this.health.timer[this.cpi] = Health.TIMER_MAX;
-
-    Archerman.bgMusic.play();
-    if (this.amIPlaying()) {
-      this.handleTurnChange();
-    }
-    window.setTimeout(() => {
-      this.isInteractable = true;
-      if (this.amIPlaying()) this.yourTurn.hidden = false;
-    }, 2000);
-
+    if (this.gameOverText) this.gameOverText.hidden = true;
+    this.arrows = [];
+    this.ca = undefined;
+    this.aimPath.resetPreviousPath();
+    this.initPlayersPos();
+    this.initialTurn();
+    if (this.amIPlaying()) this.yourTurn.hidden = false;
+    this.isInteractable = true;
     this.play();
+    Archerman.bgMusic.play();
   };
 
   stop = () => {
@@ -737,7 +752,7 @@ export class Archerman {
 
     if (this.animationFrameRequest) {
       window.cancelAnimationFrame(this.animationFrameRequest);
-      this.animationFrameRequest = undefined
+      this.animationFrameRequest = undefined;
     }
     for (let v of Object.values(Archerman)) {
       if (v instanceof Sound) {
@@ -749,7 +764,7 @@ export class Archerman {
   tick = (elapsedTime: number) => {
     this.updateFocus(elapsedTime);
     this.draw(elapsedTime);
-    this.checkEvents(elapsedTime);
+    if (this.isGamePlaying) this.checkEvents(elapsedTime);
   };
 
   timeoutHandler = (pi: number) => {
@@ -763,8 +778,7 @@ export class Archerman {
         this.ca.vx,
         this.ca.vy
       );
-      this.handlePlayerHit(pi, 1);
-      this.handleTurnChange();
+      this.handlePlayerHit(pi, 1) && this.handleTurnChange();
     }
   };
 

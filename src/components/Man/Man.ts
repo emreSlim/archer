@@ -32,30 +32,18 @@ export class Man extends CanvasComponent {
     this.facingRight = facingRight;
 
     this.root = new Part(10);
-    this.root.setAngleOffset(Man.DEFAULT_ANGLE);
-    this.root.setPos(x, y, true);
+
     this.kneeL = new Part(10, this.root);
     this.footL = new Part(10, this.kneeL);
     this.kneeR = new Part(10, this.root);
     this.footR = new Part(10, this.kneeR);
-    this.footL.setPos(x - 4, y + 19, !facingRight);
-    this.footR.setPos(x + 4, y + 19, !facingRight);
-
     this.shldr = new Part(10, this.root);
-    this.shldr.setAngleOffset(facingRight ? 0.15 : -0.15);
     this.neck = new Part(9, this.shldr);
-    this.neck.setAngleOffset(-this.shldr.getAngleOffset());
     this.alboL = new Part(10, this.shldr);
-    this.alboL.setAngleOffset(Math.PI - this.shldr.getAngleOffset() * 1.5);
     this.palmL = new Part(10, this.alboL);
-    this.palmL.setAngleOffset(-this.shldr.getAngleOffset() * 6);
     this.alboR = new Part(10, this.shldr);
-    this.alboR.setAngleOffset(Math.PI - this.shldr.getAngleOffset() * 2);
     this.palmR = new Part(10, this.alboR);
-    this.palmR.setAngleOffset(-this.shldr.getAngleOffset() * 8);
-
     this.arrowAO = facingRight ? -0.15 : 0.15;
-
     this.cBoxScope = [
       this.shldr,
       this.root,
@@ -64,8 +52,24 @@ export class Man extends CanvasComponent {
       this.footL,
       this.footR,
     ];
-    this.updateCBox();
+  
+    this.resetPosition();
   }
+
+  resetPosition = () => {
+    this.root.setAngleOffset(Man.DEFAULT_ANGLE);
+    this.root.setPos(this.x, this.y, true);
+    this.footL.setPos(this.x - 4, this.y + 19, !this.facingRight);
+    this.footR.setPos(this.x + 4, this.y + 19, !this.facingRight);
+    this.shldr.setAngleOffset(this.facingRight ? 0.15 : -0.15);
+    this.neck.setAngleOffset(-this.shldr.getAngleOffset());
+    this.alboL.setAngleOffset(Math.PI - this.shldr.getAngleOffset() * 1.5);
+    this.palmL.setAngleOffset(-this.shldr.getAngleOffset() * 6);
+    this.alboR.setAngleOffset(Math.PI - this.shldr.getAngleOffset() * 2);
+    this.palmR.setAngleOffset(-this.shldr.getAngleOffset() * 8);
+    this.updateCBox();
+
+  };
 
   setPosition = (x: number, y: number) => {
     this.x = x;

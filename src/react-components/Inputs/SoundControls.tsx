@@ -22,7 +22,7 @@ export const SoundControls = () => {
       >
         <span className="sound-btn-text-container">
           Music
-          {musicOn && <span>✓</span>}
+          {musicOn && <span>{'\u2714'}</span>}
         </span>
         <input
           className="sound-range-input"
@@ -50,7 +50,7 @@ export const SoundControls = () => {
         }
       >
         <span className="sound-btn-text-container">
-          Sound Effects {sfxOn && <span>&#x2713</span>}
+          Sound Effects {sfxOn && <span>{'\u2714'}</span>}
         </span>
         <input
           className="sound-range-input"

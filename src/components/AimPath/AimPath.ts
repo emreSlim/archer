@@ -16,18 +16,21 @@ export class AimPath extends CanvasComponent {
   ];
 
   
-  private previousPoints:Number2D[] = [
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-    new Number2D(-1, -1),
-  ]
+  private previousPoints:Number2D[] = []
+
+  resetPreviousPath = () => {
+    if(this.previousPoints.length>0){
+      this.previousPoints.forEach(p=>{
+        p.x=-1;
+        p.y=-1;
+      })
+    }else{
+      this.pointsArray.forEach(()=>{
+        this.previousPoints.push(new Number2D(-1, -1))
+      })
+    }
+  
+  }
 
   copyAsPreviousPath = () => {
     this.pointsArray.forEach((p,i)=>{
