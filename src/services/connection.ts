@@ -1,9 +1,9 @@
 import { IO, RequestPayload } from "archerman-common";
 import { getUID } from "./getUID";
 
-const ENDPOINT = "ws://localhost:4321";
+// const ENDPOINT = "ws://localhost:4321";
 
-// const ENDPOINT = "wss://archerman-server.onrender.com/:10000";
+const ENDPOINT = "wss://archerman-server.onrender.com/:10000";
 
 export class Connection extends IO<WebSocket> {
   constructor() {
