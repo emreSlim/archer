@@ -1,0 +1,63 @@
+.sound-btn {
+  display:flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap:4px;
+  align-items: center;
+  width: 100%;
+}
+
+.sound-btn-text-container{
+  display:flex;
+  justify-content: space-between;
+  gap:10px;
+  align-items: center;
+  width: 100%;
+  min-height: 20px;
+}
+
+.sound-range-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--themeSecondaryColor);
+  width: 100%;
+  height: 2px;
+  padding: 0px;
+  margin: 9px 0px;
+}
+
+.sound-range-input::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--themePrimaryColor);
+  cursor: pointer;
+}
+
+.sound-range-input::-moz-range-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--themeSecondaryColor);
+  cursor: pointer;
+  transition: 0.1s;
+}
+
+
+.sound-range-input::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--themeSecondaryColor);
+  cursor: pointer;
+  transition: 0.1s;
+}
+
+.sound-range-input::-webkit-slider-thumb:hover{
+  background: var(--themePrimaryColor);
+}

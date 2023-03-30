@@ -1,7 +1,7 @@
 import { IO, RequestPayload } from "archerman-common";
 import { getUID } from "./getUID";
 
-// const ENDPOINT = "ws://192.168.0.102:4321";
+// const ENDPOINT = "ws://localhost:4321";
 
 const ENDPOINT = "wss://archerman-server.onrender.com/:10000";
 

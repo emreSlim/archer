@@ -1,0 +1,33 @@
+.ready-state{
+  display:flex;
+  flex-direction: column;
+  width: 100%;
+  gap:8px;
+  
+}
+
+.ready-state-container{
+  display: flex;
+  justify-content: space-between;
+}
+
+.span-button {
+  background: var(--themeBGColor);
+  border-radius: 4px;
+  box-sizing: border-box;
+  padding-top:3px;
+  padding-left:7.5px;
+  color: var(--themeSecondaryColor);
+  border: 1px solid var(--themeSecondaryColor);
+  user-select: none;
+  height: 30px;
+  width: 30px;
+  display: inline-block;
+}
+
+.status-box {
+  display:flex;
+  flex-direction: column;
+  gap:8px;
+  align-items: center;
+}

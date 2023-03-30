@@ -1,3 +1,13 @@
+
+:root{
+    --themePrimaryColor:rgb(255, 119, 0);
+    --themeSecondaryColor: white;
+    --themeBGColor:black;
+    --btnShadowNormal: 3px 3px 4px #0009;
+    --btnShadowActive: 1px 1px 1px #0009;
+    --btnShadowHover: 2px 2px 2px #0009;
+}
+
 body {
     padding: 0px;
     margin: 0px;
@@ -7,7 +17,7 @@ body {
     justify-content: center;
     flex-direction: column;
     height: 100vh;
-    background: radial-gradient(white, rgb(255, 119, 0) 100%);
+    background: radial-gradient(white, var(--themePrimaryColor) 100%);
 }
 
 html {
@@ -47,36 +57,38 @@ html {
 
 }
 
-:root {
-    --btnShadowNormal: 3px 3px 4px #0009;
-    --btnShadowActive: 1px 1px 1px #0009;
-    --btnShadowHover: 2px 2px 2px #0009;
-
+p {
+    margin: 0px;
 }
 
 button {
-    border: none;
-    background: #000;
+    background: var(--themeBGColor);
     border-radius: 20px;
     box-shadow: var(--btnShadowNormal);
     padding: 8px 16px;
-    color: rgb(255, 240, 213);
+    color: var(--themeSecondaryColor);
     font-weight: bolder;
     cursor: pointer;
     text-transform: uppercase;
-    height: 30px;
-
+    border:1px solid var(--themeSecondaryColor);
+    user-select: none;
 }
 
 
-button:active {
+button:active:not(:disabled) {
     box-shadow: var(--btnShadowActive);
 }
 
-button:hover:not(:active) {
+button:hover:not(:active):not(:disabled) {
     box-shadow: var(--btnShadowHover);
 }
 
+
+button:disabled{
+    background: #555;
+    color:#AAA;
+    cursor: not-allowed;
+}
 .svgbtn {
     filter: drop-shadow(var(--btnShadowNormal))
 }

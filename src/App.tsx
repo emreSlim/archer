@@ -1,10 +1,11 @@
 import React, { useEffect } from "react";
-import { Back, clickSound, Loader, Lobby, LobbyUI } from "./react-components";
+import { Back, clickSound, Loader, Lobby, LobbyUI, Menu } from "./react-components";
 import {
   Connection,
   RequestPayload,
   PeerConnection,
   EventPayload,
+  LocalStorage,
 } from "./services";
 import { Archerman, GameMouseEvent } from "./components/";
 import "./style.css";
@@ -33,21 +34,22 @@ export class App extends React.Component<{}, AppState> {
     log: [],
   };
 
+  handleTouchMove = (e: TouchEvent) => {
+    e.preventDefault();
+  };
+
   componentDidMount = () => {
-    document.addEventListener(
-      "touchmove",
-      function (e) {
-        e.preventDefault();
-      },
-      { passive: false }
-    );
+    document.addEventListener("touchmove", this.handleTouchMove, {
+      passive: false,
+    });
+    window.addEventListener("back", this.handleBackClick);
 
     window.onkeyup = (e) => {
       if (e.ctrlKey && e.shiftKey && e.altKey) {
-        const game = new Archerman(0);
+        const game = this.createGameInstance(0);
         game.isTesting = true;
         game.start();
-        this.setState({ showUI: AppUI.CANVAS,game });
+        this.setState({ showUI: AppUI.CANVAS, game });
 
         // switch (e.key) {
         //   case 'M':
@@ -59,6 +61,7 @@ export class App extends React.Component<{}, AppState> {
 
   componentWillUnmount = () => {
     window.removeEventListener("back", this.handleBackClick);
+    document.removeEventListener("touchmove", this.handleTouchMove);
   };
 
   getMusicMuted = () => {
@@ -111,10 +114,10 @@ export class App extends React.Component<{}, AppState> {
     serverConn.connect().then(() => {
       this.setState({ showUI: AppUI.LOBBY, serverConn });
     });
-    this.setPeerConnection(serverConn);
+    this.setUpPeerConnection(serverConn);
   };
 
-  setPeerConnection = (serverConn: Connection) => {
+  setUpPeerConnection = (serverConn: Connection) => {
     const peerConn = new PeerConnection(serverConn);
     peerConn.onsetupcomplete = this.playGame;
     this.setState({ peerConn });
@@ -124,189 +127,191 @@ export class App extends React.Component<{}, AppState> {
     this.state.peerConn?.sendOffer();
   };
 
+  createGameInstance = (myPlayerIndex: number) => {
+    const game = new Archerman(myPlayerIndex);
+    game.setMusicMute(this.getMusicMuted());
+    game.setSFXMute(this.getSFXMuted());
+    return game;
+  };
   playGame = async () => {
-    if (this.state.peerConn && this.state.serverConn) {
-      const myPlayerIndex = (
-        await this.state.serverConn.request<number>(
-          new RequestPayload("get.player.position")
-        )
-      ).data;
+    // if (this.state.peerConn && this.state.serverConn) {
+    //   const game = this.createGameInstance(
+    //     (
+    //       await this.state.serverConn.request<number>(
+    //         new RequestPayload("get.player.position")
+    //       )
+    //     ).data
+    //   );
 
-      const game = new Archerman(myPlayerIndex);
-      game.setMusicMute(this.getMusicMuted());
-      game.setSFXMute(this.getSFXMuted());
-      window.addEventListener("back", this.handleBackClick);
+    //   game.log = (s) => {
+    //     this.setState((state) => {
+    //       state.log.push(s);
+    //       return { log: state.log };
+    //     });
+    //   };
 
-   
-      game.log = (s) => {
-        this.setState((state) => {
-          state.log.push(s);
-          return { log: state.log };
-        });
-      };
+    //   game.ongameover = (won: boolean) => {
+    //     this.setState({ showUI: AppUI.LOBBY, lobbyDefaultUI: LobbyUI.REPLAY });
+    //   };
 
-      game.ongameover = (won: boolean) => {
-        this.setState({ showUI: AppUI.LOBBY, lobbyDefaultUI: LobbyUI.REPLAY });
-      };
+    //   enum DataEventType {
+    //     PULL,
+    //     RELEASE,
+    //     TURN,
+    //     HIT,
+    //     ARROW_OUT_FRAME,
+    //     PULLSTART,
+    //     MOVE,
+    //     BIRDS_FLY,
+    //     BIRD_HIT,
+    //   }
 
-      enum DataEventType {
-        PULL,
-        RELEASE,
-        TURN,
-        HIT,
-        ARROW_OUT_FRAME,
-        PULLSTART,
-        MOVE,
-        BIRDS_FLY,
-        BIRD_HIT,
-      }
+    //   type Data<T> = {
+    //     type: DataEventType;
+    //     data?: T;
+    //   };
 
-      type Data<T> = {
-        type: DataEventType;
-        data?: T;
-      };
+    //   this.setState({ showUI: AppUI.CANVAS });
+    //   game.onpull = (e) => {
+    //     this.state.peerConn?.sendData<Data<GameMouseEvent>>({
+    //       data: e,
+    //       type: DataEventType.PULL,
+    //     });
+    //   };
+    //   game.onrelease = (...e) => {
+    //     this.state.peerConn?.sendData<Data<any[]>>(
+    //       {
+    //         data: e,
+    //         type: DataEventType.RELEASE,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onturn = (airIntensity) => {
+    //     this.state.peerConn?.sendData<Data<number>>(
+    //       {
+    //         data: airIntensity,
+    //         type: DataEventType.TURN,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onhit = (...args) => {
+    //     this.state.peerConn?.sendData<Data<any[]>>(
+    //       {
+    //         data: args,
+    //         type: DataEventType.HIT,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onoutofframe = () => {
+    //     this.state.peerConn?.sendData<Data<any>>(
+    //       {
+    //         type: DataEventType.ARROW_OUT_FRAME,
+    //       },
+    //       true
+    //     );
+    //   };
+    //   game.onpullstart = (e) => {
+    //     this.state.peerConn?.sendData<Data<GameMouseEvent>>(
+    //       {
+    //         data: e,
+    //         type: DataEventType.PULLSTART,
+    //       },
+    //       true
+    //     );
+    //   };
 
-      this.setState({ showUI: AppUI.CANVAS });
-      game.onpull = (e) => {
-        this.state.peerConn?.sendData<Data<GameMouseEvent>>({
-          data: e,
-          type: DataEventType.PULL,
-        });
-      };
-      game.onrelease = (...e) => {
-        this.state.peerConn?.sendData<Data<any[]>>(
-          {
-            data: e,
-            type: DataEventType.RELEASE,
-          },
-          true
-        );
-      };
-      game.onturn = (airIntensity) => {
-        this.state.peerConn?.sendData<Data<number>>(
-          {
-            data: airIntensity,
-            type: DataEventType.TURN,
-          },
-          true
-        );
-      };
-      game.onhit = (...args) => {
-        this.state.peerConn?.sendData<Data<any[]>>(
-          {
-            data: args,
-            type: DataEventType.HIT,
-          },
-          true
-        );
-      };
-      game.onoutofframe = () => {
-        this.state.peerConn?.sendData<Data<any>>(
-          {
-            type: DataEventType.ARROW_OUT_FRAME,
-          },
-          true
-        );
-      };
-      game.onpullstart = (e) => {
-        this.state.peerConn?.sendData<Data<GameMouseEvent>>(
-          {
-            data: e,
-            type: DataEventType.PULLSTART,
-          },
-          true
-        );
-      };
+    //   game.onplayermove = (...args) => {
+    //     this.state.peerConn?.sendData<Data<number[]>>({
+    //       data: args,
+    //       type: DataEventType.MOVE,
+    //     });
+    //   };
 
-      game.onplayermove = (...args) => {
-        this.state.peerConn?.sendData<Data<number[]>>({
-          data: args,
-          type: DataEventType.MOVE,
-        });
-      };
+    //   game.onbirdsfly = (args) => {
+    //     this.state.peerConn?.sendData<Data<any[]>>(
+    //       {
+    //         data: args,
+    //         type: DataEventType.BIRDS_FLY,
+    //       },
+    //       true
+    //     );
+    //   };
 
-      game.onbirdsfly = (args) => {
-        this.state.peerConn?.sendData<Data<any[]>>(
-          {
-            data: args,
-            type: DataEventType.BIRDS_FLY,
-          },
-          true
-        );
-      };
+    //   game.onbirdhit = (index) => {
+    //     this.state.peerConn?.sendData<Data<number>>(
+    //       {
+    //         data: index,
+    //         type: DataEventType.BIRD_HIT,
+    //       },
+    //       true
+    //     );
+    //   };
 
-      game.onbirdhit = (index) => {
-        this.state.peerConn?.sendData<Data<number>>(
-          {
-            data: index,
-            type: DataEventType.BIRD_HIT,
-          },
-          true
-        );
-      };
-
-      this.state.peerConn.ondata = (e: Data<any>) => {
-        switch (e.type) {
-          case DataEventType.PULL:
-            {
-              game.handlePullArrow(e.data);
-            }
-            break;
-          case DataEventType.RELEASE:
-            {
-              game.handleReleaseArrow(e.data[0], e.data[1]);
-              if (game.ca != null) {
-                game.ca.angle = e.data[2];
-                game.ca.vx = e.data[3];
-                game.ca.vy = e.data[4];
-              }
-            }
-            break;
-          case DataEventType.TURN:
-            {
-              game.handleTurnChange(e.data);
-            }
-            break;
-          case DataEventType.HIT:
-            {
-              if (game.ca != null) {
-                game.ca.angle = e.data[2];
-                game.ca.x = e.data[3];
-                game.ca.y = e.data[4];
-                game.ca.vx = e.data[5];
-                game.ca.vy = e.data[6];
-              }
-              game.handlePlayerHit(e.data[0], e.data[1]);
-            }
-            break;
-          case DataEventType.ARROW_OUT_FRAME:
-            {
-              game.handleArrowOutOfFrame();
-            }
-            break;
-          case DataEventType.PULLSTART:
-            {
-              game.handlePullStart(e.data);
-            }
-            break;
-          case DataEventType.MOVE:
-            {
-              game.handlePlayerMove(e.data[0], e.data[1]);
-            }
-            break;
-          case DataEventType.BIRDS_FLY:
-            {
-              game.handleBirdsFly(e.data);
-            }
-            break;
-          case DataEventType.BIRD_HIT: {
-            game.handleBirdHit(e.data);
-          }
-        }
-      };
-      game.start();
-      this.setState({ game });
-    }
+    //   this.state.peerConn.ondata = (e: Data<any>) => {
+    //     switch (e.type) {
+    //       case DataEventType.PULL:
+    //         {
+    //           game.handlePullArrow(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.RELEASE:
+    //         {
+    //           game.handleReleaseArrow(e.data[0], e.data[1]);
+    //           if (game.ca != null) {
+    //             game.ca.angle = e.data[2];
+    //             game.ca.vx = e.data[3];
+    //             game.ca.vy = e.data[4];
+    //           }
+    //         }
+    //         break;
+    //       case DataEventType.TURN:
+    //         {
+    //           game.handleTurnChange(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.HIT:
+    //         {
+    //           if (game.ca != null) {
+    //             game.ca.angle = e.data[2];
+    //             game.ca.x = e.data[3];
+    //             game.ca.y = e.data[4];
+    //             game.ca.vx = e.data[5];
+    //             game.ca.vy = e.data[6];
+    //           }
+    //           game.handlePlayerHit(e.data[0], e.data[1]);
+    //         }
+    //         break;
+    //       case DataEventType.ARROW_OUT_FRAME:
+    //         {
+    //           game.handleArrowOutOfFrame();
+    //         }
+    //         break;
+    //       case DataEventType.PULLSTART:
+    //         {
+    //           game.handlePullStart(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.MOVE:
+    //         {
+    //           game.handlePlayerMove(e.data[0], e.data[1]);
+    //         }
+    //         break;
+    //       case DataEventType.BIRDS_FLY:
+    //         {
+    //           game.handleBirdsFly(e.data);
+    //         }
+    //         break;
+    //       case DataEventType.BIRD_HIT: {
+    //         game.handleBirdHit(e.data);
+    //       }
+    //     }
+    //   };
+    //   game.start();
+    //   this.setState({ game });
+    // }
   };
 
   exitRoom = () => {
@@ -357,67 +362,72 @@ export class App extends React.Component<{}, AppState> {
   };
 
   render = () => {
-    return (
-      <>
-        <div
-          style={{
-            position: "absolute",
-            top: 20,
-            left: 20,
-            right: 20,
-            display: "flex",
-            justifyContent: this.state.game?.isGamePlaying
-              ? "center"
-              : "flex-start",
-            gap: 20,
-            zIndex: 1,
-            alignItems: "center",
-            opacity: this.state.game?.isGamePlaying ? 0.5 : 1,
-          }}
-        >
-          {this.state.showUI !== AppUI.INIT && (
-            <button
-              onClick={() => {
-                window.dispatchEvent(new Event("back", { bubbles: false }));
-                this.playClickSound();
-              }}
-            >
-              Back
-            </button>
-          )}
-          <button
-            onClick={() => {
-              this.playClickSound();
-              this.setMusicMuted(!this.getMusicMuted());
-            }}
-          >
-            music {this.getMusicMuted() ? "off" : "on"}
-          </button>
-          <button
-            onClick={() => {
-              this.setSFXMuted(!this.getSFXMuted());
-              this.playClickSound();
-            }}
-          >
-            sfx {this.getSFXMuted() ? "off" : "on"}
-          </button>
-          <div>
-            {this.state.log.map((l) => (
-              <p>{l}</p>
-            ))}
-          </div>
-        </div>
-        {this.getUI()}
-        <p
-          style={{
-            position: "fixed",
-            right: 10,
-            bottom: 10,
-          }}
-        >
-          1.0.4
-        </p>
-      </>
-    );
-  };
+    return <Menu/>
+  }
+
+  // render = () => {
+  //   return (
+  //     <>
+  //       <div
+  //         style={{
+  //           position: "absolute",
+  //           top: 20,
+  //           left: 20,
+  //           right: 20,
+  //           display: "flex",
+  //           justifyContent: this.state.game?.isGamePlaying
+  //             ? "center"
+  //             : "flex-start",
+  //           gap: 20,
+  //           zIndex: 1,
+  //           alignItems: "center",
+  //           opacity: this.state.game?.isGamePlaying ? 0.5 : 1,
+  //         }}
+  //       >
+  //         {this.state.showUI !== AppUI.INIT && (
+  //           <button
+  //             onClick={() => {
+  //               window.dispatchEvent(new Event("back", { bubbles: false }));
+  //               this.playClickSound();
+  //             }}
+  //           >
+  //             Back
+  //           </button>
+  //         )}
+  //         <button
+  //           onClick={() => {
+  //             this.playClickSound();
+  //             this.setMusicMuted(!this.getMusicMuted());
+  //           }}
+  //         >
+  //           music {this.getMusicMuted() ? "off" : "on"}
+  //         </button>
+  //         <button
+  //           onClick={() => {
+  //             this.setSFXMuted(!this.getSFXMuted());
+  //             this.playClickSound();
+  //           }}
+  //         >
+  //           sfx {this.getSFXMuted() ? "off" : "on"}
+  //         </button>
+  //         <div>
+  //           {this.state.log.map((l) => (
+  //             <p>{l}</p>
+  //           ))}
+  //         </div>
+  //       </div>
+  //       {this.getUI()}
+  //       <p
+  //         style={{
+  //           position: "fixed",
+  //           right: 10,
+  //           bottom: 10,
+  //         }}
+  //       >
+  //         1.0.4
+  //       </p>
+  //     </>
+  //   );
+  // };
 }
+
