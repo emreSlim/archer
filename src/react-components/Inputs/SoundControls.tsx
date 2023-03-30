@@ -1,5 +1,5 @@
 import React from "react";
-import { Button,  clickSoundd } from "..";
+import { Button,  clickSoundd, lobbyMusic } from "..";
 import "./style.css";
 import { Sound } from "../../assets/";
 
@@ -16,6 +16,8 @@ export const SoundControls = () => {
         onClick={() => {
           setMusicOn((p) => {
             Sound.setConfig({ musicOn: !p });
+            if(!p) lobbyMusic.play();
+            else lobbyMusic.pause()
             return !p;
           });
         }}
@@ -34,6 +36,7 @@ export const SoundControls = () => {
           onChange={(e) => {
             setMusicVol(+e.target.value);
             Sound.setConfig({ musicVol: +e.target.value });
+            lobbyMusic.setVolume(1)
           }}
           onClick={(e) => e.stopPropagation()}
         />

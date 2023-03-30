@@ -1,8 +1,12 @@
 import React from "react";
-import { Button, Loader, SoundControls,Router, P2P } from "..";
+import { Button, Loader, SoundControls, Router, P2P } from "..";
+import { Sound } from "../../assets/index";
 import { Connection } from "../../services/connection";
 
 import "./styles.css";
+
+export const lobbyMusic = new Sound("lobby_music.m4a");
+lobbyMusic.loop = true;
 
 interface MenuProps {}
 interface MenuState {
@@ -14,6 +18,17 @@ export class Menu extends React.Component<MenuProps, MenuState> {
   state: Readonly<MenuState> = {
     currentUI: 0,
   };
+
+  componentDidMount(): void {
+    document.onmousedown = () => {
+      if (!lobbyMusic.isPlaying) lobbyMusic.play();
+      document.onmousedown = null;
+    };
+  }
+
+  componentWillUnmount(): void {
+    lobbyMusic.pause();
+  }
 
   handleP2PClick = async () => {
     if (
@@ -85,12 +100,3 @@ export class Menu extends React.Component<MenuProps, MenuState> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
