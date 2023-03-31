@@ -12,17 +12,15 @@
 }
 
 .span-button {
-  background: var(--themeBGColor);
   border-radius: 4px;
   box-sizing: border-box;
-  padding-top:3px;
-  padding-left:7.5px;
-  color: var(--themeSecondaryColor);
-  border: 1px solid var(--themeSecondaryColor);
-  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--themeBGColor);
   height: 30px;
+  color: var(--themeBGColor);
   width: 30px;
-  display: inline-block;
 }
 
 .status-box {

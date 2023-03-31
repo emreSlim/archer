@@ -1,7 +1,7 @@
 import React from "react";
 import { Button,  clickSoundd, lobbyMusic } from "..";
 import "./style.css";
-import { Sound } from "../../assets/";
+import { Sound } from "../../assets";
 
 export const SoundControls = () => {
   const [musicOn, setMusicOn] = React.useState(Sound.config.musicOn);

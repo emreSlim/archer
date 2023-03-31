@@ -40,8 +40,9 @@ export class Archerman {
   static arrowPulling = new Sound("arrow_pulling.m4a");
   static myTurnBell = new Sound("myturn.m4a");
   static headshotReact = new Sound("headshot-react.m4a");
-  static bgMusic = new Sound("bg_music.m4a");
-
+    static bgMusic = new Sound("bg_music.m4a");
+  static generateAirIntensity = () =>  Random.int(-3, 3)
+  
   canvas: HTMLCanvasElement;
   players = [new Man(-100, -100, true), new Man(-100, -100, false)];
   arrows: Arrow[] = [];
@@ -147,8 +148,6 @@ export class Archerman {
       this.leaves.push(new C());
     }
   }
-
-
 
   amIPlaying = () => {
     return this.isTesting || this.cpi === this.mpi;
@@ -299,6 +298,7 @@ export class Archerman {
     this.ctx.translate(-translate[0], -translate[1]);
     return translate;
   }
+
   getBirdsFlyData = () => {
     const y = this.players?.[0].neck.getPos().y;
     const leftPoint = () => new Number2D(-Bird.W / 2, y - Random.int(50, 10)),
@@ -333,7 +333,7 @@ export class Archerman {
       h
     ).data;
   };
-  getOtherPlayerIndex = () =>  this.mpi === 0 ? 1 : 0
+  getOtherPlayerIndex = () => (this.mpi === 0 ? 1 : 0);
   handleArrowOutOfFrame = () => {
     this.pa = this.arrows.pop();
     if (this.amIPlaying()) this.onoutofframe();
@@ -415,7 +415,7 @@ export class Archerman {
     this.pa = this.arrows[lastArrowIndex];
 
     window.setTimeout(() => {
-      this.pa?.opacity.setVal(0, 2, () => {
+      this.pa?.setOpacity(0, 2, () => {
         this.arrows.splice(lastArrowIndex, 1);
       });
     }, 2000);
@@ -529,7 +529,7 @@ export class Archerman {
     window.setTimeout(() => {
       this.pullStartEvent = null;
     }, 100);
-    this.aimPath.copyAsPreviousPath();
+    if (this.amIPlaying()) this.aimPath.copyAsPreviousPath();
   };
   handleTurnChange = (airIntensity?: number) => {
     if (this.ca) this.ca.isMoving = false;
@@ -548,11 +548,13 @@ export class Archerman {
     this.cp.holdBowArrow(this.bow, a);
   };
 
-  initialTurn = (airIntensity?: number) => {
+  initialTurn = (airIntensity: number) => {
     if (!this.isGamePlaying) {
       this.isGamePlaying = true;
     }
+    this.flipCP();
     this.setAirIntensity(airIntensity);
+
     if (this.amIPlaying()) {
       this.handleBirdsFly(this.getBirdsFlyData());
     }
@@ -636,7 +638,7 @@ export class Archerman {
 
   onturn(airIntensity: number) {}
 
-  play = () => {
+  playAnimation = () => {
     let prevTime: number;
     if (this.animationFrameRequest) {
       window.cancelAnimationFrame(this.animationFrameRequest);
@@ -649,8 +651,9 @@ export class Archerman {
     this.animationFrameRequest = window.requestAnimationFrame(cb);
   };
 
+
   setAirIntensity = (airIntensity?: number) => {
-    this.airIntensity = airIntensity ?? Random.int(-3, 3);
+    this.airIntensity = airIntensity ?? Archerman.generateAirIntensity();
   };
 
   setGameOver = (lostPlayerIndex: number) => {
@@ -668,8 +671,8 @@ export class Archerman {
     );
 
     this.gameOverText.centered = true;
-    this.yourTurn.hidden = true
-    
+    this.yourTurn.hidden = true;
+
     Archerman.bgMusic.pause();
 
     window.setTimeout(() => {
@@ -678,12 +681,23 @@ export class Archerman {
       } else {
         Archerman.winSound.play();
       }
+      this.bow.setOpacity(0, 1);
+      this.ca?.setOpacity(0, 1, () => {
+        if (this.ca) this.ca.hidden = true;
+      });
     }, 500);
 
     window.setTimeout(() => {
       if (!this.isTesting) this.ongameover(this.mpi !== lostPlayerIndex);
+      this.birds.forEach(b=>{
+        b.isAlive=true
+        if(b.timeout) clearTimeout(b.timeout);
+        if(b.arrow){
+         b.arrow = undefined
+        }
+      })
       this.stop();
-      if (this.isTesting) this.play();
+      if (this.isTesting) this.playAnimation();
     }, 4000);
   };
 
@@ -737,18 +751,19 @@ export class Archerman {
     }
   };
 
-  start = () => {
+  start = (airIntensity:number) => {
     this.health.resetHealth();
     this.health.timer[this.cpi] = Health.TIMER_MAX;
     if (this.gameOverText) this.gameOverText.hidden = true;
     this.arrows = [];
     this.ca = undefined;
+    this.bow.setOpacity(1);
+
     this.aimPath.resetPreviousPath();
+
     this.initPlayersPos();
-    this.initialTurn();
-    if (this.amIPlaying()) this.yourTurn.hidden = false;
-    this.isInteractable = true;
-    this.play();
+    this.initialTurn(airIntensity);
+    this.playAnimation();
     Archerman.bgMusic.play();
   };
 
@@ -774,6 +789,7 @@ export class Archerman {
   };
 
   timeoutHandler = (pi: number) => {
+    this.ca?.setOpacity(0);
     if (this.amIPlaying() && this.ca) {
       this.onhit(
         pi,
@@ -784,8 +800,12 @@ export class Archerman {
         this.ca.vx,
         this.ca.vy
       );
-      this.handlePlayerHit(pi, 1) && this.handleTurnChange();
+      
+        this.handlePlayerHit(pi, 1) && this.handleTurnChange();
+        this.yourTurn.hidden = true;
+      
     }
+    
   };
 
   updateFocus = (elapsedTime: number) => {

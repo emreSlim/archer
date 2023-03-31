@@ -1,6 +1,7 @@
 import { TransitionableProperty } from ".";
 
 export class TransNumber extends TransitionableProperty<number> {
+
   constructor(val: number) {
     super(val, val, 0);
   }
@@ -40,6 +41,10 @@ export class TransNumber extends TransitionableProperty<number> {
     };
     cb();
   };
+
+  copyValToCurVal(): void {
+    this.currentVal = this.val;
+  }
 
   protected _onTick(elapTime: number): void {
     this.currentVal += this.velocity * elapTime;

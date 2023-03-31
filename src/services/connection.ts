@@ -3,7 +3,10 @@ import { getUID } from "./getUID";
 
 // const ENDPOINT = "ws://localhost:4321";
 
-const ENDPOINT = "wss://archerman-server.onrender.com/:10000";
+const ENDPOINT =
+  window.location.protocol === "http:"
+    ? "ws://localhost:4321"
+    : "wss://archerman-server.onrender.com/:10000";
 
 export class Connection extends IO<WebSocket> {
   constructor() {
