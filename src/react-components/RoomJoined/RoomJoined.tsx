@@ -92,8 +92,9 @@ export class RoomJoined extends React.Component<
     }
   }
 
-  handleOpponentReadyStatusChange = (isOpponentReady: boolean) =>
+  handleOpponentReadyStatusChange = (isOpponentReady: boolean) => {
     this.setState({ isOpponentReady });
+  };
 
   addListenersForPeerConnection = (peerConn: PeerConnection) => {
     peerConn.onsetupcomplete = async () => {
@@ -169,7 +170,6 @@ export class RoomJoined extends React.Component<
       ).data
     );
     game.ongameover = (won: boolean) => {
-      if (!this.props.isOwnerOfRoom) this.handleReadyBtnClick();
       this.setState({ selectedUI: 0 });
     };
 
@@ -232,6 +232,7 @@ export class RoomJoined extends React.Component<
     if (this.state.game) {
       this.setState({ selectedUI: 3 });
       this.state.game.start();
+      this.setState({ isPlayerReady: false, isOpponentReady: false });
     } else {
       alert("something went wrong, please retry");
       this.props.onLeaveClick();
