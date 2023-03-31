@@ -148,8 +148,6 @@ export class Archerman {
     }
   }
 
-
-
   amIPlaying = () => {
     return this.isTesting || this.cpi === this.mpi;
   };
@@ -333,7 +331,7 @@ export class Archerman {
       h
     ).data;
   };
-  getOtherPlayerIndex = () =>  this.mpi === 0 ? 1 : 0
+  getOtherPlayerIndex = () => (this.mpi === 0 ? 1 : 0);
   handleArrowOutOfFrame = () => {
     this.pa = this.arrows.pop();
     if (this.amIPlaying()) this.onoutofframe();
@@ -415,7 +413,7 @@ export class Archerman {
     this.pa = this.arrows[lastArrowIndex];
 
     window.setTimeout(() => {
-      this.pa?.opacity.setVal(0, 2, () => {
+      this.pa?.setOpacity(0, 2, () => {
         this.arrows.splice(lastArrowIndex, 1);
       });
     }, 2000);
@@ -668,8 +666,8 @@ export class Archerman {
     );
 
     this.gameOverText.centered = true;
-    this.yourTurn.hidden = true
-    
+    this.yourTurn.hidden = true;
+
     Archerman.bgMusic.pause();
 
     window.setTimeout(() => {
@@ -678,6 +676,10 @@ export class Archerman {
       } else {
         Archerman.winSound.play();
       }
+      this.bow.setOpacity(0,1);
+      this.ca?.setOpacity(0,1, () => {
+        if (this.ca) this.ca.hidden = true;
+      });
     }, 500);
 
     window.setTimeout(() => {
@@ -743,6 +745,8 @@ export class Archerman {
     if (this.gameOverText) this.gameOverText.hidden = true;
     this.arrows = [];
     this.ca = undefined;
+    this.bow.setOpacity(1);
+
     this.aimPath.resetPreviousPath();
     this.initPlayersPos();
     this.initialTurn();

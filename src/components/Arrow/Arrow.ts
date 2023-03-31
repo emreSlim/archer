@@ -61,6 +61,16 @@ export class Arrow extends CanvasComponent {
       this.imagesize
     );
   };
+
+  setOpacity = (opacity: number, animateDuration = 0,onEndCB=()=>{}) => {
+    if(this.hidden && opacity) this.hidden = false;
+    this.opacity.setVal(opacity, animateDuration, ()=>{
+      if(opacity===0) this.hidden = true;
+      onEndCB();
+    });
+  };
+
+
   updateState = (elapsedTime: number) => {
     if (!this.isMoving) return;
     this.vx = Motion.v(this.vx, this.ax, elapsedTime);
