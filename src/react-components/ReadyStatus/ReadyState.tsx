@@ -18,7 +18,6 @@ export const ReadyStatus: React.FC<{ player: boolean; opponent: boolean|undefine
 const StatusBox = ({ name, ready }: { name: string; ready: boolean }) => {
   return (
     <div
-
       className="status-box"
     >
       <strong>{name}</strong>

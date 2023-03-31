@@ -15,14 +15,13 @@
   background: var(--themeBGColor);
   border-radius: 4px;
   box-sizing: border-box;
-  padding-top:3px;
-  padding-left:7.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--themeSecondaryColor);
   border: 1px solid var(--themeSecondaryColor);
-  user-select: none;
   height: 30px;
   width: 30px;
-  display: inline-block;
 }
 
 .status-box {
