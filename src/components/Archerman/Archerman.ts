@@ -550,6 +550,7 @@ export class Archerman {
     if (!this.isGamePlaying) {
       this.isGamePlaying = true;
     }
+    this.flipCP();
     this.setAirIntensity(airIntensity);
     if (this.amIPlaying()) {
       this.handleBirdsFly(this.getBirdsFlyData());
@@ -751,8 +752,6 @@ export class Archerman {
 
     this.initPlayersPos();
     this.initialTurn();
-    if (this.amIPlaying()) this.yourTurn.hidden = false;
-    this.isInteractable = true;
     this.playAnimation();
     Archerman.bgMusic.play();
   };
