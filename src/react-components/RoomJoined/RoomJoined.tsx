@@ -101,7 +101,7 @@ export class RoomJoined extends React.Component<
       await this.createGameInstance(peerConn);
     };
 
-    peerConn.addPeerEventListener<undefined>(
+    peerConn.addPeerEventListener<number>(
       PeerEventType.START,
       this.startGame
     );
@@ -228,10 +228,10 @@ export class RoomJoined extends React.Component<
     }
   };
 
-  startGame = () => {
+  startGame = (airIntensity:number) => {
     if (this.state.game) {
       this.setState({ selectedUI: 3 });
-      this.state.game.start();
+      this.state.game.start(airIntensity);
       this.setState({ isPlayerReady: false, isOpponentReady: false });
     } else {
       alert("something went wrong, please retry");
@@ -240,11 +240,14 @@ export class RoomJoined extends React.Component<
   };
 
   handleStartBtnClick = async () => {
+    const airIntensity = Archerman.generateAirIntensity()
     this.state.peerConn.emit(
       PeerEventType.START,
-      undefined,
+      airIntensity,
       true,
-      this.startGame
+      ()=>{
+        this.startGame(airIntensity)
+      }
     );
   };
 

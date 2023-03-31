@@ -40,8 +40,9 @@ export class Archerman {
   static arrowPulling = new Sound("arrow_pulling.m4a");
   static myTurnBell = new Sound("myturn.m4a");
   static headshotReact = new Sound("headshot-react.m4a");
-  static bgMusic = new Sound("bg_music.m4a");
-
+    static bgMusic = new Sound("bg_music.m4a");
+  static generateAirIntensity = () =>  Random.int(-3, 3)
+  
   canvas: HTMLCanvasElement;
   players = [new Man(-100, -100, true), new Man(-100, -100, false)];
   arrows: Arrow[] = [];
@@ -297,6 +298,7 @@ export class Archerman {
     this.ctx.translate(-translate[0], -translate[1]);
     return translate;
   }
+
   getBirdsFlyData = () => {
     const y = this.players?.[0].neck.getPos().y;
     const leftPoint = () => new Number2D(-Bird.W / 2, y - Random.int(50, 10)),
@@ -546,7 +548,7 @@ export class Archerman {
     this.cp.holdBowArrow(this.bow, a);
   };
 
-  initialTurn = (airIntensity?: number) => {
+  initialTurn = (airIntensity: number) => {
     if (!this.isGamePlaying) {
       this.isGamePlaying = true;
     }
@@ -648,8 +650,9 @@ export class Archerman {
     this.animationFrameRequest = window.requestAnimationFrame(cb);
   };
 
+
   setAirIntensity = (airIntensity?: number) => {
-    this.airIntensity = airIntensity ?? Random.int(-3, 3);
+    this.airIntensity = airIntensity ?? Archerman.generateAirIntensity();
   };
 
   setGameOver = (lostPlayerIndex: number) => {
@@ -740,7 +743,7 @@ export class Archerman {
     }
   };
 
-  start = () => {
+  start = (airIntensity:number) => {
     this.health.resetHealth();
     this.health.timer[this.cpi] = Health.TIMER_MAX;
     if (this.gameOverText) this.gameOverText.hidden = true;
@@ -751,7 +754,7 @@ export class Archerman {
     this.aimPath.resetPreviousPath();
 
     this.initPlayersPos();
-    this.initialTurn();
+    this.initialTurn(airIntensity);
     this.playAnimation();
     Archerman.bgMusic.play();
   };
