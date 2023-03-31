@@ -12,15 +12,14 @@
 }
 
 .span-button {
-  background: var(--themeBGColor);
   border-radius: 4px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--themeSecondaryColor);
-  border: 1px solid var(--themeSecondaryColor);
+  border: 1px solid var(--themeBGColor);
   height: 30px;
+  color: var(--themeBGColor);
   width: 30px;
 }
 
