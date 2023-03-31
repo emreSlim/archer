@@ -2,6 +2,7 @@ import { TransitionableProperty } from ".";
 import { Number2D } from "../index";
 
 export class TransNumber2D extends TransitionableProperty<Number2D> {
+
   constructor(x: number, y: number) {
     super(new Number2D(x, y), new Number2D(x, y), new Number2D(0, 0));
   }
@@ -26,6 +27,11 @@ export class TransNumber2D extends TransitionableProperty<Number2D> {
     this.val.x = x;
     this.val.y = y;
   };
+
+  copyValToCurVal(): void {
+     this.currentVal.x = this.val.x;
+     this.currentVal.y = this.val.y;
+  }
 
   protected _onTick(elapTime: number): void {
     this.currentVal.x += this.velocity.x * elapTime;

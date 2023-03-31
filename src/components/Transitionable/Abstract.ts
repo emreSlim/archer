@@ -13,6 +13,8 @@ export abstract class TransitionableProperty<T> {
 
   protected onEndCB: (() => void) | undefined;
 
+  abstract copyValToCurVal(): void;
+
   protected onEnd = () => {
     this.isAnimating = false;
     this.onEndCB?.();
@@ -29,6 +31,7 @@ export abstract class TransitionableProperty<T> {
         this._onTick(Math.min(this.remTime, elapTime));
         this.remTime -= elapTime;
         this.onupdate();
+        if (this.remTime <= 0) this.copyValToCurVal();
       } else {
         this.onEnd();
       }
