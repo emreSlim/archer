@@ -2,7 +2,7 @@ export * from "./Lobby";
 export * from "./Loaders";
 export * from "./Buttons";
 export * from "./Menu";
-export * from './Inputs'
+export * from './SoundControls/index'
 export * from './Router'
 export * from './ReadyStatus'
 export * from './RoomJoined'
