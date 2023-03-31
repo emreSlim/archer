@@ -527,7 +527,7 @@ export class Archerman {
     window.setTimeout(() => {
       this.pullStartEvent = null;
     }, 100);
-   if(this.amIPlaying()) this.aimPath.copyAsPreviousPath();
+    if (this.amIPlaying()) this.aimPath.copyAsPreviousPath();
   };
   handleTurnChange = (airIntensity?: number) => {
     if (this.ca) this.ca.isMoving = false;
@@ -677,8 +677,8 @@ export class Archerman {
       } else {
         Archerman.winSound.play();
       }
-      this.bow.setOpacity(0,1);
-      this.ca?.setOpacity(0,1, () => {
+      this.bow.setOpacity(0, 1);
+      this.ca?.setOpacity(0, 1, () => {
         if (this.ca) this.ca.hidden = true;
       });
     }, 500);
@@ -778,6 +778,7 @@ export class Archerman {
   };
 
   timeoutHandler = (pi: number) => {
+    this.ca?.setOpacity(0);
     if (this.amIPlaying() && this.ca) {
       this.onhit(
         pi,
@@ -788,8 +789,12 @@ export class Archerman {
         this.ca.vx,
         this.ca.vy
       );
-      this.handlePlayerHit(pi, 1) && this.handleTurnChange();
+      
+        this.handlePlayerHit(pi, 1) && this.handleTurnChange();
+        this.yourTurn.hidden = true;
+      
     }
+    
   };
 
   updateFocus = (elapsedTime: number) => {

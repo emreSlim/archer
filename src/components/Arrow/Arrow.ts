@@ -62,14 +62,13 @@ export class Arrow extends CanvasComponent {
     );
   };
 
-  setOpacity = (opacity: number, animateDuration = 0,onEndCB=()=>{}) => {
-    if(this.hidden && opacity) this.hidden = false;
-    this.opacity.setVal(opacity, animateDuration, ()=>{
-      if(opacity===0) this.hidden = true;
+  setOpacity = (opacity: number, animateDuration = 0, onEndCB = () => {}) => {
+    if (this.hidden && opacity) this.hidden = false;
+    this.opacity.setVal(opacity, animateDuration, () => {
+      if (opacity === 0) this.hidden = true;
       onEndCB();
     });
   };
-
 
   updateState = (elapsedTime: number) => {
     if (!this.isMoving) return;
