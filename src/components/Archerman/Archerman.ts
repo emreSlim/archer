@@ -636,7 +636,7 @@ export class Archerman {
 
   onturn(airIntensity: number) {}
 
-  play = () => {
+  playAnimation = () => {
     let prevTime: number;
     if (this.animationFrameRequest) {
       window.cancelAnimationFrame(this.animationFrameRequest);
@@ -683,7 +683,7 @@ export class Archerman {
     window.setTimeout(() => {
       if (!this.isTesting) this.ongameover(this.mpi !== lostPlayerIndex);
       this.stop();
-      if (this.isTesting) this.play();
+      if (this.isTesting) this.playAnimation();
     }, 4000);
   };
 
@@ -748,7 +748,7 @@ export class Archerman {
     this.initialTurn();
     if (this.amIPlaying()) this.yourTurn.hidden = false;
     this.isInteractable = true;
-    this.play();
+    this.playAnimation();
     Archerman.bgMusic.play();
   };
 
