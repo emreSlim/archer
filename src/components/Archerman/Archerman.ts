@@ -527,7 +527,7 @@ export class Archerman {
     window.setTimeout(() => {
       this.pullStartEvent = null;
     }, 100);
-    this.aimPath.copyAsPreviousPath();
+   if(this.amIPlaying()) this.aimPath.copyAsPreviousPath();
   };
   handleTurnChange = (airIntensity?: number) => {
     if (this.ca) this.ca.isMoving = false;
@@ -748,6 +748,7 @@ export class Archerman {
     this.bow.setOpacity(1);
 
     this.aimPath.resetPreviousPath();
+
     this.initPlayersPos();
     this.initialTurn();
     if (this.amIPlaying()) this.yourTurn.hidden = false;
