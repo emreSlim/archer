@@ -554,6 +554,7 @@ export class Archerman {
     }
     this.flipCP();
     this.setAirIntensity(airIntensity);
+
     if (this.amIPlaying()) {
       this.handleBirdsFly(this.getBirdsFlyData());
     }
@@ -688,6 +689,13 @@ export class Archerman {
 
     window.setTimeout(() => {
       if (!this.isTesting) this.ongameover(this.mpi !== lostPlayerIndex);
+      this.birds.forEach(b=>{
+        b.isAlive=true
+        if(b.timeout) clearTimeout(b.timeout);
+        if(b.arrow){
+         b.arrow = undefined
+        }
+      })
       this.stop();
       if (this.isTesting) this.playAnimation();
     }, 4000);
