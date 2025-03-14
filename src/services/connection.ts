@@ -6,7 +6,8 @@ import { getUID } from "./getUID";
 const ENDPOINT =
   window.location.protocol === "http:"
     ? "ws://localhost:4321"
-    : "wss://archerman-server.onrender.com/:10000";
+    : "wss://archerman-signaller-420258608072.europe-west1.run.app/:4321";
+
 
 export class Connection extends IO<WebSocket> {
   constructor() {
